@@ -23,6 +23,9 @@ a{color:inherit;}
 .tabs{display:flex;border-bottom:1px solid var(--border);}
 .tab{flex:1;background:none;border:none;color:var(--text2);padding:14px;font-size:14px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;}
 .tab.active{color:var(--text);border-bottom-color:var(--text);}
+.type-filter{display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);}
+.type-filter button{background:none;border:1px solid var(--border);color:var(--text2);border-radius:14px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;}
+.type-filter button.active{background:#fff;color:#000;border-color:#fff;}
 .feed{display:block;}
 .post{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);}
 .post-main{flex:1;min-width:0;}
@@ -69,6 +72,11 @@ a{color:inherit;}
       <button class="tab active" data-tab="official">Рейтинг тредчана</button>
       <button class="tab" data-tab="community">Пропозиції спільноти</button>
     </div>
+    <div class="type-filter">
+      <button class="active" data-filter="all">Усі</button>
+      <button data-filter="фільм">Фільми</button>
+      <button data-filter="серіал">Серіали</button>
+    </div>
     <section id="feed-official" class="feed"></section>
     <section id="feed-community" class="feed" style="display:none">
       <p class="empty-state">Завантажую пропозиції з GitHub…</p>
@@ -94,13 +102,13 @@ const SEED = [
 {t:"Interstellar",y:"2014",type:"фільм",rating:8.7,cat:"Вже знаєш",cast:"Matthew McConaughey, Anne Hathaway, Jessica Chastain",syn:"Фермер-пілот залишає доньку заради польоту крізь червоточину в пошуках нового дому для людства.",wiki:"Interstellar_(film)"},
 {t:"Se7en",y:"1995",type:"фільм",rating:8.6,cat:"Бред Пітт (раніше виключено)",cast:"Brad Pitt, Morgan Freeman, Kevin Spacey",syn:"Два детективи ганяються за вбивцею, який карає жертв за сімома смертними гріхами. Молодий напарник поступово втрачає психологічну стійкість перед фіналом.",wiki:"Se7en"},
 {t:"Whiplash",y:"2014",type:"фільм",rating:8.5,cat:"Рекомендація",cast:"Miles Teller, J.K. Simmons",syn:"Молодий барабанщик потрапляє під крило викладача-тирана, що ламає учнів заради ідеї величі. Межа між тренуванням таланту й психологічним катуванням стирається.",wiki:"Whiplash_(film)"},
-{t:"Mr. Robot",y:"2015",type:"серіал",rating:8.5,cat:"Рекомендація",cast:"Rami Malek, Christian Slater, Carly Chaikin",syn:"Хакер із соціальною тривожністю і дисоціативним розладом приєднується до групи, що хоче знищити світову корпорація боргів. Межа між реальністю і його психікою розмивається.",wiki:"Mr._Robot"},
+{t:"Mr. Robot",y:"2015",type:"серіал",rating:8.5,cat:"Рекомендація",cast:"Rami Malek, Christian Slater, Carly Chaikin",syn:"Хакер із соціальною тривожністю і дисоціативним розладом приєднується до групи, що хоче знищити світову корпорацію боргів. Межа між реальністю і його психікою розмивається.",wiki:"Mr._Robot"},
 {t:"The Usual Suspects",y:"1995",type:"фільм",rating:8.5,cat:"Рекомендація",cast:"Kevin Spacey, Gabriel Byrne, Benicio del Toro",syn:"П'ятеро злочинців після пограбування опиняються втягнутими в план міфічного злочинного генія. Психологічна гра з глядачем, з фіналом-твістом.",wiki:"The_Usual_Suspects"},
 {t:"The Queen's Gambit",y:"2020",type:"серіал",rating:8.5,cat:"Рекомендація",cast:"Anya Taylor-Joy, Bill Camp",syn:"Сирота з дитинства виявляє шаховий геній під впливом транквілізаторів. Залежність, яка колись рятувала її психіку, стає на заваді росту.",wiki:"The_Queen%27s_Gambit_(miniseries)"},
 {t:"The Prestige",y:"2006",type:"фільм",rating:8.5,cat:"Нолан (раніше виключено)",cast:"Christian Bale, Hugh Jackman, Scarlett Johansson",syn:"Двоє фокусників-суперників доводять професійну ревність до одержимості й саморуйнування. Кожен приносить у жертву особисте життя заради ідеального трюку.",wiki:"The_Prestige_(film)"},
 {t:"Ozark",y:"2017",type:"серіал",rating:8.4,cat:"Рекомендація",cast:"Jason Bateman, Laura Linney, Julia Garner",syn:"Фінансовий консультант змушений відмивати гроші картелю, щоб врятувати родину. Сімейний бізнес на межі закону поступово руйнує шлюб і психіку кожного.",wiki:"Ozark_(TV_series)"},
 {t:"Memento",y:"2000",type:"фільм",rating:8.4,cat:"Нолан (раніше виключено)",cast:"Guy Pearce, Carrie-Anne Moss",syn:"Чоловік без короткочасної пам'яті розслідує вбивство дружини за допомогою нотаток і татуювань. Розповідь іде у зворотному порядку, повторюючи хаос його психіки.",wiki:"Memento_(film)"},
-{t:"Snatch",y:"2000",type:"фільм",rating:8.3,cat:"Гай Річі + Бред Пітт",cast:"Brad Pitt, Jason Statham, Benicio del Toro",syn:"Викрадений діамант зводить разом боксерських менджерів, циган-боксерів і лондонських бандитів. Кук отдночасно і Гай Річі, і Бред Пітт.",wiki:"Snatch_(2000_film)"},
+{t:"Snatch",y:"2000",type:"фільм",rating:8.3,cat:"Гай Річі + Бред Пітт",cast:"Brad Pitt, Jason Statham, Benicio del Toro",syn:"Викрадений діамант зводить разом боксерських менеджерів, циган-боксерів і лондонських бандитів. Тут одночасно і Гай Річі, і Бред Пітт.",wiki:"Snatch_(2000_film)"},
 {t:"Oppenheimer",y:"2023",type:"фільм",rating:8.3,cat:"Нолан (раніше виключено)",cast:"Cillian Murphy, Emily Blunt, Robert Downey Jr.",syn:"Батько атомної бомби переживає провину і політичне переслідування після Другої світової. Наукова амбіція і моральна травма ведуть до самознищення репутації.",wiki:"Oppenheimer_(film)"},
 {t:"The Wolf of Wall Street",y:"2013",type:"фільм",rating:8.2,cat:"Рекомендація",cast:"Leonardo DiCaprio, Jonah Hill, Margot Robbie",syn:"Молодий брокер будує імперію шахрайства на Волл-стріт і тоне в наркотиках та розкоші. Бізнес-хист і психологічна залежність від адреналіну ведуть до краху.",wiki:"The_Wolf_of_Wall_Street_(2013_film)"},
 {t:"A Beautiful Mind",y:"2001",type:"фільм",rating:8.2,cat:"Рекомендація",cast:"Russell Crowe, Jennifer Connelly",syn:"Геніальний математик розробляє теорію ігор, водночас борючись із шизофренією. Наукове визнання приходить лише після прийняття власної хвороби.",wiki:"A_Beautiful_Mind_(film)"},
@@ -288,10 +296,15 @@ async function hydratePosters(root){
   }
 }
 
+let lastRatingsMap = {};
+let typeFilter = "all";
+
 function renderOfficial(ratingsMap){
+  lastRatingsMap = ratingsMap;
   const el = document.getElementById("feed-official");
   el.innerHTML = "";
-  const scored = SEED.map(item=>{
+  const source = typeFilter==="all" ? SEED : SEED.filter(item=>item.type===typeFilter);
+  const scored = source.map(item=>{
     const ratings = ratingsMap[item.t] || [];
     const rated = ratings.filter(r=>r.rating!=null);
     const avgCommunity = rated.length ? (rated.reduce((s,r)=>s+r.rating,0)/rated.length) : null;
@@ -299,6 +312,10 @@ function renderOfficial(ratingsMap){
     return {item, ratings, combined};
   });
   scored.sort((a,b)=>b.combined-a.combined);
+  if(scored.length===0){
+    el.innerHTML = '<p class="empty-state">Нічого не знайдено для цього фільтра.</p>';
+    return;
+  }
   scored.forEach(s=>el.appendChild(buildSeedPost(s.item, s.ratings)));
   hydratePosters(el);
 }
@@ -330,6 +347,15 @@ document.querySelectorAll(".tab").forEach(btn=>{
     const target = btn.dataset.tab;
     document.getElementById("feed-official").style.display = target==="official" ? "block" : "none";
     document.getElementById("feed-community").style.display = target==="community" ? "block" : "none";
+  });
+});
+
+document.querySelectorAll(".type-filter button").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".type-filter button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    typeFilter = btn.dataset.filter;
+    renderOfficial(lastRatingsMap);
   });
 });
 
