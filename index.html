@@ -621,7 +621,7 @@ function buildSeedPost(item, ratings, likes, seenEntries){
         (item.poster ? '<div class="poster"><img src="'+item.poster+'" alt="'+escapeAttr(item.t)+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px;"></div>' : '<div class="poster" data-wiki="'+item.wiki+'" data-title="'+escapeAttr(item.t)+'" data-type="'+item.type+'">'+initials+'</div>') +
         '<div class="movie-info">' +
           '<p class="movie-title">'+item.t+' ('+item.y+')</p>' +
-          (item.rating>0 ? '<p class="movie-rating">★ '+item.rating.toFixed(1)+' · '+item.type+communityLine+'</p>' : '<p class="movie-rating">'+item.type+communityLine+'</p>') +
+          (item.rating>0 ? '<p class="movie-rating">★ '+item.rating.toFixed(1)+' · '+item.type+communityLine+'</p>' : '<p class="movie-rating">'+item.type+(communityLine || ' · Ще не оцінено')+'</p>') +
           (item.d ? '<p class="movie-director">Режисер: '+escapeAttr(item.d)+'</p>' : '') +
           (item.cast ? '<p class="movie-cast">'+item.cast+'</p>' : '') +
           '<p class="post-body">'+item.syn+'</p>' +
@@ -1196,13 +1196,22 @@ document.getElementById("proposeModalSubmit").addEventListener("click", async fu
 let lastApprovedItems = [];
 let isAdmin = !!localStorage.getItem("adminKey");
 
+function truncateSyn(text, maxLen){
+  if(!text) return "";
+  if(text.length <= maxLen) return text;
+  const cut = text.slice(0, maxLen);
+  const lastSpace = cut.lastIndexOf(" ");
+  const trimmed = lastSpace > maxLen*0.6 ? cut.slice(0, lastSpace) : cut;
+  return trimmed.trim() + "…";
+}
+
 function parseApprovedIssues(issues){
   return issues.filter(function(i){ return !i.pull_request && i.state==="open" && i.title.indexOf("[Схвалено]")===0; }).map(function(issue){
     const title = issue.title.replace("[Схвалено]","").trim();
     const parsed = parseProposeBody(issue.body);
     return {
       t: title, y: parsed.year || "", type: parsed.type || "фільм", rating: 0,
-      cat: "Від тредчана", cast: "", syn: parsed.description || parsed.comment || "",
+      cat: "Від тредчана", cast: "", syn: truncateSyn(parsed.description || parsed.comment || "", 220),
       d: parsed.director || "", poster: parsed.poster || "", mood: null,
       approvedIssueNumber: issue.number
     };
