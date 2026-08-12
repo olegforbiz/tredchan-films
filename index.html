@@ -551,7 +551,7 @@ async function handleReplySubmit(issueNumber, formEl, listEl){
     if(toggleBtn){ toggleBtn.style.display = ""; toggleBtn.textContent = "Сховати відповіді"; }
     textInput.value = "";
     formEl.style.display = "none";
-    const countEl = formEl.closest(".post").querySelector(".icon-static .icon-count");
+    const countEl = formEl.closest(".post").querySelector(".comments-toggle .icon-count");
     if(countEl){ countEl.textContent = (parseInt(countEl.textContent,10)||0) + 1; }
   }catch(err){
     if(hint){ hint.textContent = "Не вдалося надіслати. Спробуй ще раз."; hint.style.color = "#f87171"; }
@@ -594,7 +594,7 @@ function buildSeedPost(item, ratings, likes, seenEntries){
       '<div class="comments" data-comments></div>' +
       '<div class="actions">' +
       '<button type="button" class="icon-btn like-btn'+(isLikedByMe?' liked':'')+'" data-title="'+escapeAttr(item.t)+'">'+iconHeart()+'<span class="icon-count">'+likeCount+'</span></button>' +
-      '<span class="icon-btn icon-static">'+iconComment()+'<span class="icon-count">'+totalComments+'</span></span>' +
+      '<button type="button" class="icon-btn comments-toggle">'+iconComment()+'<span class="icon-count">'+totalComments+'</span></button>' +
       '<button type="button" class="rate-link rate-btn" data-title="'+escapeAttr(item.t)+'">Оцінити / прокоментувати</button>' +
     '</div>' +
     '</div>';
@@ -682,6 +682,14 @@ function buildSeedPost(item, ratings, likes, seenEntries){
 
       commentsWrap.appendChild(c);
     });
+    commentsWrap.style.display = "none";
+    const commentsToggle = post.querySelector(".comments-toggle");
+    if(commentsToggle){
+      commentsToggle.addEventListener("click", function(){
+        const expanded = commentsWrap.style.display !== "none";
+        commentsWrap.style.display = expanded ? "none" : "block";
+      });
+    }
   } else {
     commentsWrap.remove();
   }
