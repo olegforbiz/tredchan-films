@@ -623,7 +623,7 @@ function buildSeedPost(item, ratings, likes, seenEntries){
           '<p class="movie-title">'+item.t+' ('+item.y+')</p>' +
           (item.rating>0 ? '<p class="movie-rating">★ '+item.rating.toFixed(1)+' · '+item.type+communityLine+'</p>' : '<p class="movie-rating">'+item.type+communityLine+'</p>') +
           (item.d ? '<p class="movie-director">Режисер: '+escapeAttr(item.d)+'</p>' : '') +
-          '<p class="movie-cast">'+item.cast+'</p>' +
+          (item.cast ? '<p class="movie-cast">'+item.cast+'</p>' : '') +
           '<p class="post-body">'+item.syn+'</p>' +
         '</div>' +
       '</div>' +
