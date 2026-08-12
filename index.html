@@ -122,6 +122,7 @@ button.rate-link{background:none;font-family:inherit;cursor:pointer;}
     </div>
     <div class="seen-filter">
       <button type="button" id="seenFilterToggle" class="active">Приховати переглянуте</button>
+      <button type="button" id="onlySeenToggle">Я дивився</button>
     </div>
     <section id="feed-official" class="feed"></section>
     <section id="feed-community" class="feed" style="display:none">
@@ -752,6 +753,7 @@ let lastSeenMap = {};
 let typeFilter = "all";
 let moodFilter = null;
 let hideSeen = true;
+let showOnlySeen = false;
 
 function renderOfficial(ratingsMap){
   lastRatingsMap = ratingsMap;
@@ -770,7 +772,9 @@ function renderOfficial(ratingsMap){
   scored.sort((a,b)=>b.combined-a.combined);
   const isSeenEntry = (s) => !!findMySeenEntry(lastSeenMap[s.item.t] || []);
   let finalList;
-  if(hideSeen){
+  if(showOnlySeen){
+    finalList = scored.filter(s=>isSeenEntry(s));
+  } else if(hideSeen){
     finalList = scored.filter(s=>!isSeenEntry(s));
   } else {
     const notSeen = scored.filter(s=>!isSeenEntry(s));
@@ -778,9 +782,11 @@ function renderOfficial(ratingsMap){
     finalList = notSeen.concat(seen);
   }
   if(finalList.length===0){
-    el.innerHTML = scored.length>0
-      ? '<p class="empty-state">Усе з цього фільтра вже позначено переглянутим. Натисни «Приховати переглянуте», щоб побачити знову.</p>'
-      : '<p class="empty-state">Нічого не знайдено для цього фільтра.</p>';
+    el.innerHTML = showOnlySeen
+      ? '<p class="empty-state">Ти ще нічого не позначив переглянутим.</p>'
+      : (scored.length>0
+        ? '<p class="empty-state">Усе з цього фільтра вже позначено переглянутим. Натисни «Приховати переглянуте», щоб побачити знову.</p>'
+        : '<p class="empty-state">Нічого не знайдено для цього фільтра.</p>');
     return;
   }
   finalList.forEach(s=>el.appendChild(buildSeedPost(s.item, s.ratings, lastLikesMap[s.item.t] || [], lastSeenMap[s.item.t] || [])));
@@ -853,6 +859,20 @@ if(seenFilterBtn){
   seenFilterBtn.addEventListener("click", function(){
     hideSeen = !hideSeen;
     updateSeenFilterLabel();
+    renderOfficial(lastRatingsMap);
+  });
+}
+
+const onlySeenBtn = document.getElementById("onlySeenToggle");
+if(onlySeenBtn){
+  function updateOnlySeenLabel(){
+    onlySeenBtn.classList.toggle("active", showOnlySeen);
+    onlySeenBtn.textContent = showOnlySeen ? "Показати всі" : "Я дивився";
+  }
+  updateOnlySeenLabel();
+  onlySeenBtn.addEventListener("click", function(){
+    showOnlySeen = !showOnlySeen;
+    updateOnlySeenLabel();
     renderOfficial(lastRatingsMap);
   });
 }
