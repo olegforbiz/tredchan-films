@@ -90,12 +90,29 @@ export default {
 
       if (!title) return jsonResponse({ error: "Title is required" }, 400);
 
+      let imdbRating = "";
+      if (env.OMDB_API_KEY) {
+        try {
+          const omdbTitle = originalTitle || title;
+          let omdbUrl = "https://www.omdbapi.com/?apikey=" + env.OMDB_API_KEY + "&t=" + encodeURIComponent(omdbTitle);
+          if (year) omdbUrl += "&y=" + encodeURIComponent(year);
+          const omdbRes = await fetch(omdbUrl);
+          if (omdbRes.ok) {
+            const omdbData = await omdbRes.json();
+            if (omdbData.Response === "True" && omdbData.imdbRating && omdbData.imdbRating !== "N/A") {
+              imdbRating = omdbData.imdbRating;
+            }
+          }
+        } catch (e) {}
+      }
+
       const issueTitle = "[Фільм] " + title;
       let issueBody = "Ім'я: " + name + "\n";
       if (originalTitle && originalTitle !== title) issueBody += "Оригінальна назва: " + originalTitle + "\n";
       if (year) issueBody += "Рік: " + year + "\n";
       if (director) issueBody += "Режисер: " + director + "\n";
       if (mediaType) issueBody += "Тип: " + mediaType + "\n";
+      if (imdbRating) issueBody += "Рейтинг IMDb: " + imdbRating + "\n";
       if (poster) issueBody += "Постер: " + poster + "\n";
       issueBody += "\n";
       if (description) issueBody += "Опис: " + description + "\n\n";
