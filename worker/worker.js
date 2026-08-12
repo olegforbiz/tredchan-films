@@ -32,46 +32,91 @@ export default {
       });
     }
 
-    const title = (data.title || "").toString().trim().slice(0, 200);
-    const rating = (data.rating || "").toString().trim().slice(0, 10);
-    const comment = (data.comment || "").toString().trim().slice(0, 2000);
+    const ghHeaders = {
+      "Authorization": "Bearer " + env.GITHUB_TOKEN,
+      "Accept": "application/vnd.github+json",
+      "User-Agent": "tredchan-films-worker",
+      "Content-Type": "application/json",
+    };
 
-    if (!title) {
-      return new Response(JSON.stringify({ error: "Title is required" }), {
-        status: 400,
+    function jsonResponse(obj, status) {
+      return new Response(JSON.stringify(obj), {
+        status: status,
         headers: { "Content-Type": "application/json", ...corsHeaders() },
       });
     }
 
-    const issueTitle = "[Оцінка] " + title;
-    const issueBody = "Оцінка (1-10): " + rating + "\n\nКоментар: " + comment;
+    const type = (data.type || "rate").toString();
 
-    const ghRes = await fetch(
-      "https://api.github.com/repos/" + REPO + "/issues",
-      {
+    if (type === "rate") {
+      const title = (data.title || "").toString().trim().slice(0, 200);
+      const rating = (data.rating || "").toString().trim().slice(0, 10);
+      const comment = (data.comment || "").toString().trim().slice(0, 2000);
+
+      if (!title) return jsonResponse({ error: "Title is required" }, 400);
+
+      const issueTitle = "[Оцінка] " + title;
+      const issueBody = "Оцінка (1-10): " + rating + "\n\nКоментар: " + comment;
+
+      const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues", {
         method: "POST",
-        headers: {
-          "Authorization": "Bearer " + env.GITHUB_TOKEN,
-          "Accept": "application/vnd.github+json",
-          "User-Agent": "tredchan-films-worker",
-          "Content-Type": "application/json",
-        },
+        headers: ghHeaders,
         body: JSON.stringify({ title: issueTitle, body: issueBody }),
-      }
-    );
-
-    if (!ghRes.ok) {
-      const errText = await ghRes.text();
-      return new Response(JSON.stringify({ error: "GitHub API error", details: errText }), {
-        status: 502,
-        headers: { "Content-Type": "application/json", ...corsHeaders() },
       });
+      if (!ghRes.ok) {
+        const errText = await ghRes.text();
+        return jsonResponse({ error: "GitHub API error", details: errText }, 502);
+      }
+      const ghData = await ghRes.json();
+      return jsonResponse({ success: true, url: ghData.html_url, issueNumber: ghData.number }, 200);
     }
 
-    const ghData = await ghRes.json();
-    return new Response(JSON.stringify({ success: true, url: ghData.html_url }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders() },
-    });
+    if (type === "like") {
+      const title = (data.title || "").toString().trim().slice(0, 200);
+      if (!title) return jsonResponse({ error: "Title is required" }, 400);
+
+      const issueTitle = "[Лайк] " + title;
+      const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues", {
+        method: "POST",
+        headers: ghHeaders,
+        body: JSON.stringify({ title: issueTitle, body: "👍" }),
+      });
+      if (!ghRes.ok) {
+        const errText = await ghRes.text();
+        return jsonResponse({ error: "GitHub API error", details: errText }, 502);
+      }
+      const ghData = await ghRes.json();
+      return jsonResponse({ success: true, issueNumber: ghData.number }, 200);
+    }
+
+    if (type === "unlike") {
+      const issueNumber = parseInt(data.issueNumber, 10);
+      if (!issueNumber || issueNumber < 1) return jsonResponse({ error: "Valid issueNumber is required" }, 400);
+
+      const getRes = await fetch("https://api.github.com/repos/" + REPO + "/issues/" + issueNumber, {
+        headers: ghHeaders,
+      });
+      if (!getRes.ok) {
+        const errText = await getRes.text();
+        return jsonResponse({ error: "GitHub API error", details: errText }, 502);
+      }
+      const issueData = await getRes.json();
+      if (!issueData.title || issueData.title.indexOf("[Лайк]") !== 0) {
+        return jsonResponse({ error: "Issue is not a like record" }, 403);
+      }
+
+      const patchRes = await fetch("https://api.github.com/repos/" + REPO + "/issues/" + issueNumber, {
+        method: "PATCH",
+        headers: ghHeaders,
+        body: JSON.stringify({ state: "closed" }),
+      });
+      if (!patchRes.ok) {
+        const errText = await patchRes.text();
+        return jsonResponse({ error: "GitHub API error", details: errText }, 502);
+      }
+      return jsonResponse({ success: true }, 200);
+    }
+
+    return jsonResponse({ error: "Unknown type" }, 400);
   },
 };
