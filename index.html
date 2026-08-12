@@ -118,7 +118,7 @@ button.rate-link{background:none;font-family:inherit;cursor:pointer;}
       <button type="button" id="rateModalCancel" class="modal-btn-secondary">Скасувати</button>
       <button type="button" id="rateModalSubmit" class="modal-btn-primary">Надіслати</button>
     </div>
-    <p class="modal-hint">Відкриє GitHub у новій вкладці — лишиться тиснути «Submit new issue».</p>
+    <p class="modal-hint" id="rateModalHint"></p>
   </div>
 </div>
 <script>
@@ -223,6 +223,10 @@ function openRateModal(title){
   document.getElementById("rateModalTitle").textContent = title;
   document.getElementById("rateModalRating").value = "";
   document.getElementById("rateModalComment").value = "";
+  const hint = document.getElementById("rateModalHint");
+  if(hint){ hint.textContent = ""; hint.style.color = ""; }
+  const submitBtn = document.getElementById("rateModalSubmit");
+  if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = "Надіслати"; }
   document.getElementById("rateModalOverlay").style.display = "flex";
 }
 function closeRateModal(){
@@ -230,13 +234,31 @@ function closeRateModal(){
 }
 document.getElementById("rateModalCancel").addEventListener("click", closeRateModal);
 document.getElementById("rateModalOverlay").addEventListener("click", function(e){ if(e.target.id==="rateModalOverlay") closeRateModal(); });
-document.getElementById("rateModalSubmit").addEventListener("click", function(){
+const RATE_WORKER_URL = "https://tredchan-films.oleg-forbiz.workers.dev";
+document.getElementById("rateModalSubmit").addEventListener("click", async function(){
+  const btn = this;
   const rating = document.getElementById("rateModalRating").value.trim();
   const comment = document.getElementById("rateModalComment").value.trim();
-  const t = encodeURIComponent("[Оцінка] "+__rateModalTitle);
-  const b = encodeURIComponent("Оцінка (1-10): "+rating+"\n\nКоментар: "+comment);
-  window.open("https://github.com/"+REPO+"/issues/new?title="+t+"&body="+b, "_blank", "noopener");
-  closeRateModal();
+  const hint = document.getElementById("rateModalHint");
+  btn.disabled = true;
+  btn.textContent = "Надсилаємо…";
+  if(hint){ hint.textContent = ""; hint.style.color = ""; }
+  try{
+    const res = await fetch(RATE_WORKER_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ title: __rateModalTitle, rating: rating, comment: comment })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
+    if(hint){ hint.textContent = "Дякуємо! Оцінку додано."; hint.style.color = "#4ade80"; }
+    btn.textContent = "Надіслано";
+    setTimeout(closeRateModal, 1200);
+  }catch(err){
+    if(hint){ hint.textContent = "Не вдалося надіслати. Спробуйте ще раз."; hint.style.color = "#f87171"; }
+    btn.disabled = false;
+    btn.textContent = "Надіслати";
+  }
 });
 
 function parseRatingIssues(issues){
