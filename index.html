@@ -945,16 +945,31 @@ function extractYearFromText(text){
 
 async function fetchWikiMovieInfo(title, lang){
   try{
-    const searchUrl = "https://"+lang+".wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=1&srsearch="+encodeURIComponent(title);
+    const searchUrl = "https://"+lang+".wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=5&srsearch="+encodeURIComponent(title);
     const sRes = await fetch(searchUrl);
     const sData = await sRes.json();
-    const hit = sData.query && sData.query.search && sData.query.search[0];
-    if(!hit) return null;
-    const pageTitle = hit.title;
-    const slug = encodeURIComponent(pageTitle.replace(/ /g,"_"));
-    const sumRes = await fetch("https://"+lang+".wikipedia.org/api/rest_v1/page/summary/"+slug);
-    if(!sumRes.ok) return null;
-    const sum = await sumRes.json();
+    const hits = (sData.query && sData.query.search) || [];
+    if(!hits.length) return null;
+    const mediaRe = lang === "uk"
+      ? /фільм|серіал|стрічка|кінофільм|мультфільм|аніме|мультсеріал/i
+      : /\bfilm\b|\bmovie\b|tv series|television series|\banime\b/i;
+    let chosenTitle = null, chosenSum = null, fallbackTitle = null, fallbackSum = null;
+    for(const hit of hits){
+      const slug = encodeURIComponent(hit.title.replace(/ /g,"_"));
+      try{
+        const sumRes = await fetch("https://"+lang+".wikipedia.org/api/rest_v1/page/summary/"+slug);
+        if(!sumRes.ok) continue;
+        const sum = await sumRes.json();
+        if(!fallbackTitle){ fallbackTitle = hit.title; fallbackSum = sum; }
+        if(sum.description && mediaRe.test(sum.description)){
+          chosenTitle = hit.title; chosenSum = sum; break;
+        }
+      }catch(e){}
+    }
+    if(!chosenTitle && fallbackTitle){ chosenTitle = fallbackTitle; chosenSum = fallbackSum; }
+    if(!chosenTitle) return null;
+    const pageTitle = chosenTitle;
+    const sum = chosenSum;
     const poster = (sum.originalimage && sum.originalimage.source) || (sum.thumbnail && sum.thumbnail.source) || "";
     const description = sum.extract || "";
     const year = extractYearFromText(sum.description) || extractYearFromText(description);
