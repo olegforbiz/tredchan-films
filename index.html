@@ -367,7 +367,7 @@ function buildSeedPost(item, ratings, likes){
     '<div class="avatar">OF</div>' +
     '<div class="post-main">' +
       '<div class="post-head"><span class="handle">@olegforbiz</span><span class="meta">оригінальний перелік</span><span class="tag">'+item.cat+'</span></div>' +
-      '<a class="movie-card" href="https://en.wikipedia.org/wiki/'+item.wiki+'" target="_blank" rel="noopener">' +
+      '<div class="movie-card">' +
         '<div class="poster" data-wiki="'+item.wiki+'" data-title="'+escapeAttr(item.t)+'">'+initials+'</div>' +
         '<div class="movie-info">' +
           '<p class="movie-title">'+item.t+' ('+item.y+')</p>' +
@@ -375,7 +375,7 @@ function buildSeedPost(item, ratings, likes){
           '<p class="movie-cast">'+item.cast+'</p>' +
           '<p class="post-body">'+item.syn+'</p>' +
         '</div>' +
-      '</a>' +
+      '</div>' +
       watchLinksHtml(item.t) +
       '<div class="comments" data-comments></div>' +
       '<div class="actions">' +
