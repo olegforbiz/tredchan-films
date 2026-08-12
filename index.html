@@ -87,6 +87,15 @@ a{color:inherit;}
 .modal-btn-secondary{background:none;color:var(--text2);}
 .modal-btn-primary{background:#fff;color:#000;border-color:#fff;}
 .modal-hint{margin:12px 0 0;font-size:11px;color:var(--text2);text-align:center;}
+.propose-preview-loading{display:none;margin-top:10px;font-size:11px;color:var(--text2);}
+.propose-preview-loading.active{display:block;}
+.propose-preview{display:none;margin-top:10px;gap:10px;padding:10px;background:#111;border:1px solid var(--border);border-radius:10px;}
+.propose-preview.active{display:flex;}
+.propose-preview img{width:56px;height:84px;object-fit:cover;border-radius:6px;flex-shrink:0;background:#222;}
+.propose-preview-info{flex:1;min-width:0;}
+.propose-preview-title{font-size:13px;font-weight:600;color:var(--text);margin:0 0 2px;}
+.propose-preview-meta{font-size:11px;color:var(--text2);margin:0 0 4px;}
+.propose-preview-desc{font-size:11px;color:var(--text2);margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 button.rate-link{background:none;font-family:inherit;cursor:pointer;}
 </style>
 </head>
@@ -158,6 +167,15 @@ button.rate-link{background:none;font-family:inherit;cursor:pointer;}
     <input type="text" id="proposeModalName" class="modal-input" placeholder="напр. Олег">
     <label class="modal-label">Назва фільму або серіалу</label>
     <input type="text" id="proposeModalTitle" class="modal-input" placeholder="напр. Interstellar">
+    <p class="propose-preview-loading" id="proposePreviewLoading">Шукаємо…</p>
+    <div class="propose-preview" id="proposePreview">
+      <img id="proposePreviewImg" src="" alt="">
+      <div class="propose-preview-info">
+        <p class="propose-preview-title" id="proposePreviewTitle"></p>
+        <p class="propose-preview-meta" id="proposePreviewMeta"></p>
+        <p class="propose-preview-desc" id="proposePreviewDesc"></p>
+      </div>
+    </div>
     <label class="modal-label">Чому раджу</label>
     <textarea id="proposeModalComment" class="modal-textarea" placeholder="Коротко, чому варто подивитись"></textarea>
     <div class="modal-actions">
@@ -697,25 +715,59 @@ function buildSeedPost(item, ratings, likes, seenEntries){
   return post;
 }
 
+function parseProposeBody(body){
+  body = body || "";
+  const otM = body.match(/Оригінальна назва:\s*([^\n]*)/);
+  const yearM = body.match(/Рік:\s*([^\n]*)/);
+  const posterM = body.match(/Постер:\s*([^\n]*)/);
+  const descM = body.match(/Опис:\s*([\s\S]*?)\n\nКоментар тредчана:/);
+  const commentM = body.match(/Коментар тредчана:\s*([\s\S]*)/);
+  return {
+    originalTitle: otM ? otM[1].trim() : "",
+    year: yearM ? yearM[1].trim() : "",
+    poster: posterM ? posterM[1].trim() : "",
+    description: descM ? descM[1].trim() : "",
+    comment: commentM ? commentM[1].trim() : body
+  };
+}
+
 function buildCommunityPost(issue, title){
   const post = document.createElement("div");
   post.className = "post";
   const login = issue.user && issue.user.login ? issue.user.login : "анонім";
   const avatarUrl = issue.user && issue.user.avatar_url ? issue.user.avatar_url : "";
-  const body = (issue.body || "Без коментаря.").slice(0, 600);
+  const parsed = parseProposeBody(issue.body);
+  const displayTitle = parsed.originalTitle && parsed.originalTitle !== title ? title + " (" + parsed.originalTitle + ")" : title;
+  const metaBits = [];
+  if(parsed.year) metaBits.push(parsed.year);
+  metaBits.push("пропозиція тредчана");
+  const posterInner = parsed.poster ? "" : "ФІ";
+  const posterAttr = parsed.poster ? "" : ' data-title="'+escapeAttr(title)+'"';
   post.innerHTML =
     '<div class="avatar">'+(avatarUrl ? '<img src="'+avatarUrl+'" alt="'+escapeAttr(login)+'">' : login.slice(0,2).toUpperCase())+'</div>' +
     '<div class="post-main">' +
       '<div class="post-head"><span class="handle">@'+login+'</span><span class="meta">'+timeAgo(issue.created_at)+'</span></div>' +
       '<a class="movie-card" href="'+issue.html_url+'" target="_blank" rel="noopener">' +
-        '<div class="poster" data-title="'+escapeAttr(title)+'">ФІ</div>' +
-        '<div class="movie-info"><p class="movie-title">'+title+'</p><p class="movie-cast">пропозиція тредчана</p></div>' +
+        '<div class="poster"'+posterAttr+'>'+posterInner+'</div>' +
+        '<div class="movie-info"><p class="movie-title">'+displayTitle+'</p><p class="movie-cast">'+metaBits.join(" · ")+'</p></div>' +
       '</a>' +
       '<p class="post-body"></p>' +
       watchLinksHtml(title) +
       '<div class="actions">'+iconHeart()+iconComment()+'</div>' +
     '</div>';
-  post.querySelector(".post-body").textContent = body;
+  const bodyText = (parsed.description ? parsed.description + "\n\n" : "") + (parsed.comment || "Без коментаря.");
+  post.querySelector(".post-body").textContent = bodyText.slice(0, 600);
+  if(parsed.poster){
+    const posterEl = post.querySelector(".poster");
+    const img = document.createElement("img");
+    img.src = parsed.poster;
+    img.alt = title;
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+    img.style.borderRadius = "6px";
+    posterEl.appendChild(img);
+  }
   return post;
 }
 
@@ -882,6 +934,75 @@ proposeBtn.addEventListener("click", function(e){
   e.preventDefault();
   openProposeModal();
 });
+let proposeSearchResult = null;
+let proposeSearchTimer = null;
+
+function extractYearFromText(text){
+  if(!text) return "";
+  const m = text.match(/(19|20)\d{2}/);
+  return m ? m[0] : "";
+}
+
+async function fetchWikiMovieInfo(title, lang){
+  try{
+    const searchUrl = "https://"+lang+".wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=1&srsearch="+encodeURIComponent(title);
+    const sRes = await fetch(searchUrl);
+    const sData = await sRes.json();
+    const hit = sData.query && sData.query.search && sData.query.search[0];
+    if(!hit) return null;
+    const pageTitle = hit.title;
+    const slug = encodeURIComponent(pageTitle.replace(/ /g,"_"));
+    const sumRes = await fetch("https://"+lang+".wikipedia.org/api/rest_v1/page/summary/"+slug);
+    if(!sumRes.ok) return null;
+    const sum = await sumRes.json();
+    const poster = (sum.originalimage && sum.originalimage.source) || (sum.thumbnail && sum.thumbnail.source) || "";
+    const description = sum.extract || "";
+    const year = extractYearFromText(sum.description) || extractYearFromText(description);
+    let originalTitle = "";
+    if(lang === "uk"){
+      try{
+        const llRes = await fetch("https://uk.wikipedia.org/w/api.php?action=query&prop=langlinks&lllang=en&format=json&origin=*&titles="+encodeURIComponent(pageTitle));
+        const llData = await llRes.json();
+        const pages = llData.query && llData.query.pages;
+        if(pages){
+          const page = pages[Object.keys(pages)[0]];
+          if(page && page.langlinks && page.langlinks[0]) originalTitle = (page.langlinks[0]["*"] || "").replace(/\s*\([^)]*\)\s*$/, "");
+        }
+      }catch(e){}
+    } else {
+      originalTitle = pageTitle;
+    }
+    return { poster: poster, description: description, year: year, originalTitle: (originalTitle || pageTitle), pageTitle: pageTitle, lang: lang };
+  }catch(e){ return null; }
+}
+
+async function searchMovieInfo(title){
+  let info = await fetchWikiMovieInfo(title, "uk");
+  if(!info) info = await fetchWikiMovieInfo(title, "en");
+  if(!info) return null;
+  if(!info.poster){
+    info.poster = (await fetchPosterTVmaze(title)) || (await fetchPosterItunes(title, "фільм")) || "";
+  }
+  return info;
+}
+
+function renderProposePreview(info){
+  const loading = document.getElementById("proposePreviewLoading");
+  const preview = document.getElementById("proposePreview");
+  if(loading) loading.classList.remove("active");
+  if(!info){
+    if(preview) preview.classList.remove("active");
+    return;
+  }
+  const img = document.getElementById("proposePreviewImg");
+  img.src = info.poster || "";
+  img.style.display = info.poster ? "block" : "none";
+  document.getElementById("proposePreviewTitle").textContent = info.originalTitle || info.pageTitle || "";
+  document.getElementById("proposePreviewMeta").textContent = info.year ? ("Рік: "+info.year) : "";
+  document.getElementById("proposePreviewDesc").textContent = info.description ? info.description.slice(0,220) : "";
+  if(preview) preview.classList.add("active");
+}
+
 function openProposeModal(){
   document.getElementById("proposeModalName").value = getMyName();
   document.getElementById("proposeModalTitle").value = "";
@@ -890,6 +1011,12 @@ function openProposeModal(){
   if(hint){ hint.textContent = ""; hint.style.color = ""; }
   const submitBtn = document.getElementById("proposeModalSubmit");
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = "Надіслати"; }
+  proposeSearchResult = null;
+  if(proposeSearchTimer) clearTimeout(proposeSearchTimer);
+  const preview0 = document.getElementById("proposePreview");
+  if(preview0) preview0.classList.remove("active");
+  const loading0 = document.getElementById("proposePreviewLoading");
+  if(loading0) loading0.classList.remove("active");
   document.getElementById("proposeModalOverlay").style.display = "flex";
 }
 function closeProposeModal(){
@@ -897,6 +1024,24 @@ function closeProposeModal(){
 }
 document.getElementById("proposeModalCancel").addEventListener("click", closeProposeModal);
 document.getElementById("proposeModalOverlay").addEventListener("click", function(e){ if(e.target.id === "proposeModalOverlay") closeProposeModal(); });
+document.getElementById("proposeModalTitle").addEventListener("input", function(){
+  const title = this.value.trim();
+  if(proposeSearchTimer) clearTimeout(proposeSearchTimer);
+  proposeSearchResult = null;
+  const preview = document.getElementById("proposePreview");
+  if(preview) preview.classList.remove("active");
+  const loading = document.getElementById("proposePreviewLoading");
+  if(!title){
+    if(loading) loading.classList.remove("active");
+    return;
+  }
+  if(loading) loading.classList.add("active");
+  proposeSearchTimer = setTimeout(async function(){
+    const info = await searchMovieInfo(title);
+    proposeSearchResult = info;
+    renderProposePreview(info);
+  }, 700);
+});
 document.getElementById("proposeModalSubmit").addEventListener("click", async function(){
   const btn = this;
   const name = document.getElementById("proposeModalName").value.trim() || "Тредчан";
@@ -914,7 +1059,13 @@ document.getElementById("proposeModalSubmit").addEventListener("click", async fu
     const res = await fetch(RATE_WORKER_URL, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ type: "propose", title: title, name: name, comment: comment })
+      body: JSON.stringify({
+        type: "propose", title: title, name: name, comment: comment,
+        year: (proposeSearchResult && proposeSearchResult.year) || "",
+        originalTitle: (proposeSearchResult && proposeSearchResult.originalTitle) || "",
+        description: (proposeSearchResult && proposeSearchResult.description) || "",
+        poster: (proposeSearchResult && proposeSearchResult.poster) || ""
+      })
     });
     const data = await res.json();
     if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
