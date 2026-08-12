@@ -56,6 +56,18 @@ a{color:inherit;}
 .comments{margin-top:10px;border-top:1px solid var(--border);padding-top:8px;}
 .comment{font-size:13px;color:var(--text2);margin:0 0 6px;line-height:1.4;}
 .comment-handle{font-weight:600;color:var(--text);margin-right:4px;}
+.comment{margin-bottom:10px;}
+.comment-body{margin:2px 0 4px;}
+.reply-list{margin:0 0 4px 14px;border-left:2px solid var(--border);padding-left:10px;}
+.reply-item{font-size:12px;color:var(--text2);margin:0 0 4px;line-height:1.4;}
+.reply-toggle{background:none;border:none;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;padding:0;margin-left:0;}
+.reply-toggle:hover{color:var(--text);text-decoration:underline;}
+.reply-form{margin:8px 0 0 14px;max-width:320px;}
+.reply-form .modal-input,.reply-form .modal-textarea{margin-bottom:6px;font-size:13px;}
+.reply-form .modal-textarea{min-height:50px;}
+.reply-form-actions{display:flex;}
+.reply-form .reply-submit{padding:6px 12px;font-size:13px;}
+.reply-hint{margin:6px 0 0;font-size:11px;color:var(--text2);}
 .empty-state{padding:28px 16px;text-align:center;color:var(--text2);font-size:13px;line-height:1.6;}
 .footer{padding:20px 16px;text-align:center;font-size:12px;color:var(--text2);}
 .footer a{text-decoration:underline;}
@@ -117,6 +129,8 @@ button.rate-link{background:none;font-family:inherit;cursor:pointer;}
 <div id="rateModalOverlay" class="modal-overlay">
   <div class="modal-card">
     <h3 id="rateModalTitle" class="modal-title"></h3>
+    <label class="modal-label">Твоє ім'я</label>
+    <input type="text" id="rateModalName" class="modal-input" placeholder="напр. Олег">
     <label class="modal-label">Оцінка (1-10)</label>
     <input type="number" id="rateModalRating" class="modal-input" min="1" max="10" placeholder="напр. 8">
     <label class="modal-label">Коментар</label>
@@ -228,6 +242,7 @@ let __rateModalTitle = "";
 function openRateModal(title){
   __rateModalTitle = title;
   document.getElementById("rateModalTitle").textContent = title;
+  document.getElementById("rateModalName").value = getMyName();
   document.getElementById("rateModalRating").value = "";
   document.getElementById("rateModalComment").value = "";
   const hint = document.getElementById("rateModalHint");
@@ -244,6 +259,7 @@ document.getElementById("rateModalOverlay").addEventListener("click", function(e
 const RATE_WORKER_URL = "https://tredchan-films.oleg-forbiz.workers.dev";
 document.getElementById("rateModalSubmit").addEventListener("click", async function(){
   const btn = this;
+  const name = document.getElementById("rateModalName").value.trim() || "Тредчан";
   const rating = document.getElementById("rateModalRating").value.trim();
   const comment = document.getElementById("rateModalComment").value.trim();
   const hint = document.getElementById("rateModalHint");
@@ -254,10 +270,11 @@ document.getElementById("rateModalSubmit").addEventListener("click", async funct
     const res = await fetch(RATE_WORKER_URL, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ title: __rateModalTitle, rating: rating, comment: comment })
+      body: JSON.stringify({ title: __rateModalTitle, name: name, rating: rating, comment: comment })
     });
     const data = await res.json();
     if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
+    setMyName(name);
     if(hint){ hint.textContent = "Дякуємо! Оцінку додано."; hint.style.color = "#4ade80"; }
     btn.textContent = "Надіслано";
     setTimeout(closeRateModal, 1200);
@@ -275,19 +292,45 @@ function parseRatingIssues(issues){
     if(issue.title.indexOf("[Оцінка]")!==0) return;
     const movieTitle = issue.title.replace("[Оцінка]","").trim();
     const body = issue.body || "";
-    const ratingMatch = body.match(/Оцінка[^\d]{0,10}(\d{1,2})/i);
+    const nameMatch = body.match(/Ім'я:\s*([^\n]*)/i);
+    const name = (nameMatch && nameMatch[1].trim()) ? nameMatch[1].trim() : (issue.user && issue.user.login ? issue.user.login : "Тредчан");
+    const ratingMatch = body.match(/Оцінка\s*\(1-10\):\s*(\d{1,2})/i);
     let rating = ratingMatch ? parseInt(ratingMatch[1],10) : null;
-    if(rating!=null){ rating = Math.min(10, Math.max(1, rating)); }
+    if(rating!==null){ rating = Math.min(10, Math.max(1, rating)); }
     const commentMatch = body.match(/Коментар:\s*([\s\S]*)/i);
     const comment = commentMatch ? commentMatch[1].trim() : "";
     if(!map[movieTitle]) map[movieTitle] = [];
     map[movieTitle].push({
+      number: issue.number,
       rating: rating,
       comment: comment,
-      login: issue.user && issue.user.login ? issue.user.login : "анонім"
+      name: name,
+      login: issue.user && issue.user.login ? issue.user.login : "анонім",
+      replies: []
     });
   });
   return map;
+}
+
+function attachReplies(ratingsMap, comments){
+  const byIssueNumber = {};
+  Object.keys(ratingsMap).forEach(title=>{
+    ratingsMap[title].forEach(entry=>{ byIssueNumber[entry.number] = entry; });
+  });
+  (comments||[]).forEach(c=>{
+    const m = (c.issue_url||"").match(/\/issues\/(\d+)$/);
+    if(!m) return;
+    const entry = byIssueNumber[parseInt(m[1],10)];
+    if(!entry) return;
+    const body = c.body || "";
+    const nameMatch = body.match(/^Ім'я:\s*([^\n]*)/i);
+    const name = (nameMatch && nameMatch[1].trim()) ? nameMatch[1].trim() : (c.user && c.user.login ? c.user.login : "Тредчан");
+    let text = body;
+    if(nameMatch){ text = body.slice(nameMatch[0].length).replace(/^\n+/,"").trim(); }
+    if(!text) return;
+    entry.replies.push({ name: name, text: text, id: c.id });
+  });
+  return ratingsMap;
 }
 
 function parseLikeIssues(issues){
@@ -300,6 +343,16 @@ function parseLikeIssues(issues){
     map[movieTitle].push({ number: issue.number, state: issue.state });
   });
   return map;
+}
+function getMyName(){
+  try{
+    return localStorage.getItem("myName") || "";
+  }catch(e){ return ""; }
+}
+function setMyName(name){
+  try{
+    localStorage.setItem("myName", name);
+  }catch(e){}
 }
 function getMyLikeNumber(title){
   try{
@@ -351,6 +404,49 @@ async function handleLikeClick(title, btn){
   }
 }
 
+async function handleReplySubmit(issueNumber, formEl, listEl){
+  const btn = formEl.querySelector(".reply-submit");
+  const nameInput = formEl.querySelector(".reply-name");
+  const textInput = formEl.querySelector(".reply-text");
+  const hint = formEl.querySelector(".reply-hint");
+  const name = (nameInput.value || "").trim() || "Тредчан";
+  const text = (textInput.value || "").trim();
+  if(hint){ hint.textContent = ""; hint.style.color = ""; }
+  if(!text){
+    if(hint){ hint.textContent = "Напиши щось перед надсиланням."; hint.style.color = "#f87171"; }
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = "Надсилаємо…";
+  try{
+    const res = await fetch(RATE_WORKER_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ type: "reply", issueNumber: issueNumber, name: name, text: text })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
+    setMyName(name);
+    const rp = document.createElement("div");
+    rp.className = "reply-item";
+    const rspan = document.createElement("span");
+    rspan.className = "comment-handle";
+    rspan.textContent = "@"+name;
+    rp.appendChild(rspan);
+    rp.appendChild(document.createTextNode(" "+text));
+    listEl.appendChild(rp);
+    textInput.value = "";
+    formEl.style.display = "none";
+    const countEl = formEl.closest(".post").querySelector(".icon-static .icon-count");
+    if(countEl){ countEl.textContent = (parseInt(countEl.textContent,10)||0) + 1; }
+  }catch(err){
+    if(hint){ hint.textContent = "Не вдалося надіслати. Спробуй ще раз."; hint.style.color = "#f87171"; }
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Надіслати";
+  }
+}
+
 function buildSeedPost(item, ratings, likes){
   const post = document.createElement("div");
   post.className = "post";
@@ -359,6 +455,7 @@ function buildSeedPost(item, ratings, likes){
   const avgCommunity = rated.length ? (rated.reduce((s,r)=>s+r.rating,0)/rated.length) : null;
   const communityLine = avgCommunity ? ' <span class="community-rating">· тредчани '+avgCommunity.toFixed(1)+' ('+rated.length+')</span>' : '';
   const withText = (ratings||[]).filter(r=>r.comment);
+  const totalComments = withText.reduce((sum,r)=>sum + 1 + (r.replies?r.replies.length:0), 0);
   const likeList = likes || [];
   const likeCount = likeList.filter(l=>l.state==="open").length;
   const myLikeNum = getMyLikeNumber(item.t);
@@ -380,7 +477,7 @@ function buildSeedPost(item, ratings, likes){
       '<div class="comments" data-comments></div>' +
       '<div class="actions">' +
       '<button type="button" class="icon-btn like-btn'+(isLikedByMe?' liked':'')+'" data-title="'+escapeAttr(item.t)+'">'+iconHeart()+'<span class="icon-count">'+likeCount+'</span></button>' +
-      '<span class="icon-btn icon-static">'+iconComment()+'<span class="icon-count">'+withText.length+'</span></span>' +
+      '<span class="icon-btn icon-static">'+iconComment()+'<span class="icon-count">'+totalComments+'</span></span>' +
       '<button type="button" class="rate-link rate-btn" data-title="'+escapeAttr(item.t)+'">Оцінити / прокоментувати</button>' +
     '</div>' +
     '</div>';
@@ -389,16 +486,64 @@ function buildSeedPost(item, ratings, likes){
   const likeBtn = post.querySelector(".like-btn");
   if(likeBtn){ likeBtn.addEventListener("click", function(){ handleLikeClick(item.t, likeBtn); }); }
   const commentsWrap = post.querySelector("[data-comments]");
-    if(withText.length){
+  if(withText.length){
     withText.forEach(r=>{
-      const p = document.createElement("p");
-      p.className = "comment";
+      const c = document.createElement("div");
+      c.className = "comment";
+      const head = document.createElement("div");
       const span = document.createElement("span");
       span.className = "comment-handle";
-      span.textContent = "@"+r.login+(r.rating!=null ? " ("+r.rating+"/10)" : "");
-      p.appendChild(span);
-      p.appendChild(document.createTextNode(r.comment));
-      commentsWrap.appendChild(p);
+      span.textContent = "@"+r.name+(r.rating!==null ? " ("+r.rating+"/10)" : "");
+      head.appendChild(span);
+      c.appendChild(head);
+      const bodyP = document.createElement("p");
+      bodyP.className = "comment-body";
+      bodyP.textContent = r.comment;
+      c.appendChild(bodyP);
+
+      const replyList = document.createElement("div");
+      replyList.className = "reply-list";
+      (r.replies||[]).forEach(rep=>{
+        const rp = document.createElement("div");
+        rp.className = "reply-item";
+        const rspan = document.createElement("span");
+        rspan.className = "comment-handle";
+        rspan.textContent = "@"+rep.name;
+        rp.appendChild(rspan);
+        rp.appendChild(document.createTextNode(" "+rep.text));
+        replyList.appendChild(rp);
+      });
+      c.appendChild(replyList);
+
+      const replyToggle = document.createElement("button");
+      replyToggle.type = "button";
+      replyToggle.className = "reply-toggle";
+      replyToggle.textContent = "Відповісти";
+      c.appendChild(replyToggle);
+
+      const replyForm = document.createElement("div");
+      replyForm.className = "reply-form";
+      replyForm.style.display = "none";
+      replyForm.innerHTML =
+        '<input type="text" class="reply-name modal-input" placeholder="Твоє ім\'я">' +
+        '<textarea class="reply-text modal-textarea" placeholder="Відповідь..."></textarea>' +
+        '<div class="reply-form-actions">' +
+          '<button type="button" class="reply-submit modal-btn-primary">Надіслати</button>' +
+        '</div>' +
+        '<p class="reply-hint"></p>';
+      c.appendChild(replyForm);
+
+      replyToggle.addEventListener("click", function(){
+        const opening = replyForm.style.display === "none";
+        replyForm.style.display = opening ? "block" : "none";
+        if(opening){ replyForm.querySelector(".reply-name").value = getMyName(); }
+      });
+
+      replyForm.querySelector(".reply-submit").addEventListener("click", function(){
+        handleReplySubmit(r.number, replyForm, replyList);
+      });
+
+      commentsWrap.appendChild(c);
     });
   } else {
     commentsWrap.remove();
@@ -545,7 +690,13 @@ async function init(){
     const res = await fetch("https://api.github.com/repos/"+REPO+"/issues?state=all&per_page=100");
     if(res.ok){ issues = await res.json(); ok = true; }
   }catch(e){}
+  let comments = [];
+  try{
+    const cres = await fetch("https://api.github.com/repos/"+REPO+"/issues/comments?per_page=100");
+    if(cres.ok){ comments = await cres.json(); }
+  }catch(e){}
   const ratingsMap = parseRatingIssues(issues);
+  attachReplies(ratingsMap, comments);
   lastLikesMap = parseLikeIssues(issues);
   renderOfficial(ratingsMap);
   renderCommunity(issues, ok);
