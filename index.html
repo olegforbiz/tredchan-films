@@ -96,7 +96,7 @@ button.rate-link{background:none;font-family:inherit;cursor:pointer;}
       <div class="avatar">OF</div>
       <div class="composer-body">
         <p class="composer-prompt">Яке твоє улюблене кіно і чому?</p>
-        <a id="proposeBtn" class="btn-propose" href="#" target="_blank" rel="noopener">Запропонувати фільм</a>
+        <a id="proposeBtn" class="btn-propose" href="#">Запропонувати фільм</a>
       </div>
     </section>
     <div class="tabs">
@@ -140,6 +140,22 @@ button.rate-link{background:none;font-family:inherit;cursor:pointer;}
       <button type="button" id="rateModalSubmit" class="modal-btn-primary">Надіслати</button>
     </div>
     <p class="modal-hint" id="rateModalHint"></p>
+  </div>
+</div>
+<div id="proposeModalOverlay" class="modal-overlay">
+  <div class="modal-card">
+    <h3 class="modal-title">Запропонувати фільм</h3>
+    <label class="modal-label">Твоє ім'я</label>
+    <input type="text" id="proposeModalName" class="modal-input" placeholder="напр. Олег">
+    <label class="modal-label">Назва фільму або серіалу</label>
+    <input type="text" id="proposeModalTitle" class="modal-input" placeholder="напр. Interstellar">
+    <label class="modal-label">Чому раджу</label>
+    <textarea id="proposeModalComment" class="modal-textarea" placeholder="Коротко, чому варто подивитись"></textarea>
+    <div class="modal-actions">
+      <button type="button" id="proposeModalCancel" class="modal-btn-secondary">Скасувати</button>
+      <button type="button" id="proposeModalSubmit" class="modal-btn-primary">Надіслати</button>
+    </div>
+    <p class="modal-hint" id="proposeModalHint"></p>
   </div>
 </div>
 <script>
@@ -730,9 +746,56 @@ document.querySelectorAll(".type-filter button").forEach(btn=>{
 });
 
 const proposeBtn = document.getElementById("proposeBtn");
-const issueTitle = encodeURIComponent("[Фільм] Назва фільму");
-const issueBody = encodeURIComponent("Мій коментар:\n\nЧому раджу:\n\nМій рейтинг (необов'язково):");
-proposeBtn.href = "https://github.com/"+REPO+"/issues/new?title="+issueTitle+"&body="+issueBody;
+proposeBtn.addEventListener("click", function(e){
+  e.preventDefault();
+  openProposeModal();
+});
+function openProposeModal(){
+  document.getElementById("proposeModalName").value = getMyName();
+  document.getElementById("proposeModalTitle").value = "";
+  document.getElementById("proposeModalComment").value = "";
+  const hint = document.getElementById("proposeModalHint");
+  if(hint){ hint.textContent = ""; hint.style.color = ""; }
+  const submitBtn = document.getElementById("proposeModalSubmit");
+  if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = "Надіслати"; }
+  document.getElementById("proposeModalOverlay").style.display = "flex";
+}
+function closeProposeModal(){
+  document.getElementById("proposeModalOverlay").style.display = "none";
+}
+document.getElementById("proposeModalCancel").addEventListener("click", closeProposeModal);
+document.getElementById("proposeModalOverlay").addEventListener("click", function(e){ if(e.target.id === "proposeModalOverlay") closeProposeModal(); });
+document.getElementById("proposeModalSubmit").addEventListener("click", async function(){
+  const btn = this;
+  const name = document.getElementById("proposeModalName").value.trim() || "Тредчан";
+  const title = document.getElementById("proposeModalTitle").value.trim();
+  const comment = document.getElementById("proposeModalComment").value.trim();
+  const hint = document.getElementById("proposeModalHint");
+  if(hint){ hint.textContent = ""; hint.style.color = ""; }
+  if(!title){
+    if(hint){ hint.textContent = "Вкажи назву фільму чи серіалу."; hint.style.color = "#f87171"; }
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = "Надсилаємо…";
+  try{
+    const res = await fetch(RATE_WORKER_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ type: "propose", title: title, name: name, comment: comment })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
+    setMyName(name);
+    if(hint){ hint.textContent = "Дякуємо! Пропозицію додано."; hint.style.color = "#4ade80"; }
+    btn.textContent = "Надіслано";
+    setTimeout(closeProposeModal, 1200);
+  }catch(err){
+    if(hint){ hint.textContent = "Не вдалося надіслати. Спробуйте ще раз."; hint.style.color = "#f87171"; }
+    btn.disabled = false;
+    btn.textContent = "Надіслати";
+  }
+});
 
 async function init(){
   let issues = [];
