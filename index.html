@@ -26,6 +26,11 @@ a{color:inherit;}
 .type-filter{display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);}
 .type-filter button{background:none;border:1px solid var(--border);color:var(--text2);border-radius:14px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;}
 .type-filter button.active{background:#fff;color:#000;border-color:#fff;}
+.seen-filter{padding:8px 16px;border-bottom:1px solid var(--border);}
+.seen-filter button{background:none;border:1px solid var(--border);color:var(--text2);border-radius:14px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;}
+.seen-filter button.active{background:var(--gold);color:#000;border-color:var(--gold);}
+.seen-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);margin:8px 0 0;cursor:pointer;}
+.seen-toggle input{cursor:pointer;}
 .feed{display:block;}
 .post{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);}
 .post-main{flex:1;min-width:0;}
@@ -114,6 +119,9 @@ button.rate-link{background:none;font-family:inherit;cursor:pointer;}
       <button data-filter="епічно">Епічно</button>
       <button data-filter="мелодрама">Мелодрама</button>
       <button data-filter="культове">Культове</button>
+    </div>
+    <div class="seen-filter">
+      <button type="button" id="seenFilterToggle" class="active">Приховати переглянуте</button>
     </div>
     <section id="feed-official" class="feed"></section>
     <section id="feed-community" class="feed" style="display:none">
@@ -383,6 +391,25 @@ function parseLikeIssues(issues){
   });
   return map;
 }
+function parseSeenIssues(issues){
+  const map = {};
+  issues.forEach(function(issue){
+    if(issue.pull_request) return;
+    if(issue.title.indexOf("[Переглянуто]")!==0) return;
+    const movieTitle = issue.title.replace("[Переглянуто]","").trim();
+    const body = issue.body || "";
+    const nameMatch = body.match(/Ім'я:\s*([^\n]*)/i);
+    const name = nameMatch ? nameMatch[1].trim() : "";
+    if(!map[movieTitle]) map[movieTitle] = [];
+    map[movieTitle].push({ number: issue.number, state: issue.state, name: name });
+  });
+  return map;
+}
+function findMySeenEntry(seenEntries){
+  const myName = getMyName().trim().toLowerCase();
+  if(!myName) return null;
+  return (seenEntries||[]).find(function(s){ return s.state === "open" && (s.name||"").trim().toLowerCase() === myName; }) || null;
+}
 function getMyName(){
   try{
     return localStorage.getItem("myName") || "";
@@ -443,6 +470,51 @@ async function handleLikeClick(title, btn){
   }
 }
 
+async function handleSeenToggle(title, checkbox){
+  if(checkbox.dataset.busy === "1") return;
+  const wantSeen = checkbox.checked;
+  checkbox.dataset.busy = "1";
+  checkbox.disabled = true;
+  try{
+    if(wantSeen){
+      const name = getMyName().trim();
+      if(!name){
+        checkbox.checked = false;
+        alert("Спочатку вкажи своє ім'я — постав оцінку чи зроби пропозицію хоч раз, і воно запам'ятається.");
+        return;
+      }
+      const res = await fetch(RATE_WORKER_URL, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ type: "seen", title: title, name: name })
+      });
+      const data = await res.json();
+      if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
+      if(!lastSeenMap[title]) lastSeenMap[title] = [];
+      lastSeenMap[title].push({ number: data.issueNumber, state: "open", name: name });
+      if(hideSeen){ renderOfficial(lastRatingsMap); return; }
+    } else {
+      const entry = findMySeenEntry(lastSeenMap[title] || []);
+      if(entry){
+        const res = await fetch(RATE_WORKER_URL, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ type: "unseen", title: title, issueNumber: entry.number })
+        });
+        const data = await res.json();
+        if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
+        entry.state = "closed";
+      }
+    }
+  }catch(err){
+    checkbox.checked = !wantSeen;
+    console.error("seen error", err);
+  }finally{
+    checkbox.dataset.busy = "0";
+    checkbox.disabled = false;
+  }
+}
+
 async function handleReplySubmit(issueNumber, formEl, listEl){
   const btn = formEl.querySelector(".reply-submit");
   const nameInput = formEl.querySelector(".reply-name");
@@ -489,7 +561,9 @@ async function handleReplySubmit(issueNumber, formEl, listEl){
   }
 }
 
-function buildSeedPost(item, ratings, likes){
+function buildSeedPost(item, ratings, likes, seenEntries){
+  const mySeenEntry = findMySeenEntry(seenEntries);
+  const isSeen = !!mySeenEntry;
   const post = document.createElement("div");
   post.className = "post";
   const initials = item.type === "серіал" ? "СЕ" : "ФІ";
@@ -516,6 +590,7 @@ function buildSeedPost(item, ratings, likes){
         '</div>' +
       '</div>' +
       watchLinksHtml(item.t) +
+      '<label class="seen-toggle"><input type="checkbox" class="seen-checkbox"'+(isSeen?' checked':'')+'> Вже дивився</label>' +
       '<div class="comments" data-comments></div>' +
       '<div class="actions">' +
       '<button type="button" class="icon-btn like-btn'+(isLikedByMe?' liked':'')+'" data-title="'+escapeAttr(item.t)+'">'+iconHeart()+'<span class="icon-count">'+likeCount+'</span></button>' +
@@ -527,6 +602,8 @@ function buildSeedPost(item, ratings, likes){
   if(rateBtn){ rateBtn.addEventListener("click", function(){ openRateModal(item.t); }); }
   const likeBtn = post.querySelector(".like-btn");
   if(likeBtn){ likeBtn.addEventListener("click", function(){ handleLikeClick(item.t, likeBtn); }); }
+  const seenCheckbox = post.querySelector(".seen-checkbox");
+  if(seenCheckbox){ seenCheckbox.addEventListener("change", function(){ handleSeenToggle(item.t, seenCheckbox); }); }
   const commentsWrap = post.querySelector("[data-comments]");
   if(withText.length){
     withText.forEach(r=>{
@@ -663,8 +740,10 @@ async function hydratePosters(root){
 
 let lastRatingsMap = {};
 let lastLikesMap = {};
+let lastSeenMap = {};
 let typeFilter = "all";
 let moodFilter = null;
+let hideSeen = true;
 
 function renderOfficial(ratingsMap){
   lastRatingsMap = ratingsMap;
@@ -681,11 +760,22 @@ function renderOfficial(ratingsMap){
     return {item, ratings, combined};
   });
   scored.sort((a,b)=>b.combined-a.combined);
-  if(scored.length===0){
-    el.innerHTML = '<p class="empty-state">Нічого не знайдено для цього фільтра.</p>';
+  const isSeenEntry = (s) => !!findMySeenEntry(lastSeenMap[s.item.t] || []);
+  let finalList;
+  if(hideSeen){
+    finalList = scored.filter(s=>!isSeenEntry(s));
+  } else {
+    const notSeen = scored.filter(s=>!isSeenEntry(s));
+    const seen = scored.filter(s=>isSeenEntry(s));
+    finalList = notSeen.concat(seen);
+  }
+  if(finalList.length===0){
+    el.innerHTML = scored.length>0
+      ? '<p class="empty-state">Усе з цього фільтра вже позначено переглянутим. Натисни «Приховати переглянуте», щоб побачити знову.</p>'
+      : '<p class="empty-state">Нічого не знайдено для цього фільтра.</p>';
     return;
   }
-  scored.forEach(s=>el.appendChild(buildSeedPost(s.item, s.ratings, lastLikesMap[s.item.t] || [])));
+  finalList.forEach(s=>el.appendChild(buildSeedPost(s.item, s.ratings, lastLikesMap[s.item.t] || [], lastSeenMap[s.item.t] || [])));
   hydratePosters(el);
 }
 
@@ -744,6 +834,20 @@ document.querySelectorAll(".type-filter button").forEach(btn=>{
     renderOfficial(lastRatingsMap);
   });
 });
+
+const seenFilterBtn = document.getElementById("seenFilterToggle");
+if(seenFilterBtn){
+  function updateSeenFilterLabel(){
+    seenFilterBtn.textContent = hideSeen ? "Приховати переглянуте" : "Показати все (разом з переглянутим)";
+    seenFilterBtn.classList.toggle("active", hideSeen);
+  }
+  updateSeenFilterLabel();
+  seenFilterBtn.addEventListener("click", function(){
+    hideSeen = !hideSeen;
+    updateSeenFilterLabel();
+    renderOfficial(lastRatingsMap);
+  });
+}
 
 const proposeBtn = document.getElementById("proposeBtn");
 proposeBtn.addEventListener("click", function(e){
@@ -812,6 +916,7 @@ async function init(){
   const ratingsMap = parseRatingIssues(issues);
   attachReplies(ratingsMap, comments);
   lastLikesMap = parseLikeIssues(issues);
+  lastSeenMap = parseSeenIssues(issues);
   renderOfficial(ratingsMap);
   renderCommunity(issues, ok);
 }
