@@ -76,11 +76,21 @@ export default {
       const title = (data.title || "").toString().trim().slice(0, 200);
       const name = ((data.name || "").toString().trim() || "Тредчан").slice(0, 60);
       const comment = (data.comment || "").toString().trim().slice(0, 2000);
+      const year = (data.year || "").toString().trim().slice(0, 10);
+      const originalTitle = (data.originalTitle || "").toString().trim().slice(0, 200);
+      const description = (data.description || "").toString().trim().slice(0, 1000);
+      const poster = (data.poster || "").toString().trim().slice(0, 500);
 
       if (!title) return jsonResponse({ error: "Title is required" }, 400);
 
       const issueTitle = "[Фільм] " + title;
-      const issueBody = "Ім'я: " + name + "\n\n" + comment;
+      let issueBody = "Ім'я: " + name + "\n";
+      if (originalTitle && originalTitle !== title) issueBody += "Оригінальна назва: " + originalTitle + "\n";
+      if (year) issueBody += "Рік: " + year + "\n";
+      if (poster) issueBody += "Постер: " + poster + "\n";
+      issueBody += "\n";
+      if (description) issueBody += "Опис: " + description + "\n\n";
+      issueBody += "Коментар тредчана: " + comment;
 
       const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues", {
         method: "POST",
