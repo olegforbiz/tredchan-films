@@ -44,6 +44,7 @@ a{color:inherit;}
 .movie-info{flex:1;min-width:0;}
 .movie-title{font-weight:600;font-size:14px;margin:0;color:var(--text);}
 .movie-rating{font-size:12px;color:var(--gold);margin-top:3px;}
+.movie-director{font-size:11px;color:var(--text2);margin-top:2px;}
 .movie-cast{font-size:11px;color:var(--text2);margin-top:2px;}
 .actions{display:flex;gap:22px;margin-top:10px;color:var(--text2);}
 .actions svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;display:block;}
@@ -190,52 +191,52 @@ const REPO = "olegforbiz/tredchan-films";
 document.getElementById("repoLink").href = "https://github.com/" + REPO;
 
 const SEED = [
-{t:"Breaking Bad",mood:"культове",y:"2008",type:"серіал",rating:9.5,cat:"Рекомендація",cast:"Bryan Cranston, Aaron Paul, Anna Gunn",syn:"Вчитель хімії дізнається про невиліковний рак і починає варити метамфетамін, щоб забезпечити родину. Страх бідності й смерті поступово перетворює тиху людину на найнебезпечнішого злочинця міста.",wiki:"Breaking_Bad"},
-{t:"The Sopranos",mood:"культове",y:"1999",type:"серіал",rating:9.2,cat:"Рекомендація",cast:"James Gandolfini, Edie Falco, Lorraine Bracco",syn:"Бос мафії з Нью-Джерсі починає ходити до психотерапевта через панічні атаки. Керівництво кримінальним бізнесом і розбір травм дитинства йдуть паралельно.",wiki:"The_Sopranos"},
-{t:"Better Call Saul",mood:"на подумать",y:"2015",type:"серіал",rating:8.9,cat:"Рекомендація",cast:"Bob Odenkirk, Rhea Seehorn, Jonathan Banks",syn:"Приквел до Breaking Bad про адвоката, який усе життя в тіні успішного брата. Відчуття несправедливості й амбіція штовхають його до афер на межі закону.",wiki:"Better_Call_Saul"},
-{t:"Succession",mood:"на подумать",y:"2018",type:"серіал",rating:8.8,cat:"Рекомендація",cast:"Brian Cox, Jeremy Strong, Sarah Snook",syn:"Старіючий магнат медіаімперії не може обрати спадкоємця серед власних дітей. Діти воюють за трон і водночас за батьківське визнання, якого ніколи не отримували.",wiki:"Succession_(TV_series)"},
-{t:"Peaky Blinders",mood:"епічно",y:"2013",type:"серіал",rating:8.8,cat:"Рекомендація",cast:"Cillian Murphy, Paul Anderson, Sophie Rundle",syn:"Ветеран Першої світової з ПТСР перетворює вуличну банду Бірмінгема на легальну бізнес-імперію. Травма війни живить його холодний розрахунок і водночас руйнує особисте життя.",wiki:"Peaky_Blinders"},
-{t:"Inception",mood:"епічно",y:"2010",type:"фільм",rating:8.8,cat:"Нолан (раніше виключено)",cast:"Leonardo DiCaprio, Joseph Gordon-Levitt, Elliot Page",syn:"Злодій, що краде ідеї уві сні, отримує шанс повернутися додому в обмін на імплантацію чужої думки. Провина за смерть дружини переслідує його на кожному рівні сну.",wiki:"Inception"},
-{t:"Interstellar",mood:"епічно",y:"2014",type:"фільм",rating:8.7,cat:"Вже знаєш",cast:"Matthew McConaughey, Anne Hathaway, Jessica Chastain",syn:"Фермер-пілот залишає доньку заради польоту крізь червоточину в пошуках нового дому для людства.",wiki:"Interstellar_(film)"},
-{t:"Se7en",mood:"псіхо",y:"1995",type:"фільм",rating:8.6,cat:"Бред Пітт (раніше виключено)",cast:"Brad Pitt, Morgan Freeman, Kevin Spacey",syn:"Два детективи ганяються за вбивцею, який карає жертв за сімома смертними гріхами. Молодий напарник поступово втрачає психологічну стійкість перед фіналом.",wiki:"Se7en"},
-{t:"Whiplash",mood:"псіхо",y:"2014",type:"фільм",rating:8.5,cat:"Рекомендація",cast:"Miles Teller, J.K. Simmons",syn:"Молодий барабанщик потрапляє під крило викладача-тирана, що ламає учнів заради ідеї величі. Межа між тренуванням таланту й психологічним катуванням стирається.",wiki:"Whiplash_(2014_film)"},
-{t:"Mr. Robot",mood:"псіхо",y:"2015",type:"серіал",rating:8.5,cat:"Рекомендація",cast:"Rami Malek, Christian Slater, Carly Chaikin",syn:"Хакер із соціальною тривожністю і дисоціативним розладом приєднується до групи, що хоче знищити світову корпорацію боргів. Межа між реальністю і його психікою розмивається.",wiki:"Mr._Robot"},
-{t:"The Usual Suspects",mood:"на подумать",y:"1995",type:"фільм",rating:8.5,cat:"Рекомендація",cast:"Kevin Spacey, Gabriel Byrne, Benicio del Toro",syn:"П'ятеро злочинців після пограбування опиняються втягнутими в план міфічного злочинного генія. Психологічна гра з глядачем, з фіналом-твістом.",wiki:"The_Usual_Suspects"},
-{t:"The Queen's Gambit",mood:"на подумать",y:"2020",type:"серіал",rating:8.5,cat:"Рекомендація",cast:"Anya Taylor-Joy, Bill Camp",syn:"Сирота з дитинства виявляє шаховий геній під впливом транквілізаторів. Залежність, яка колись рятувала її психіку, стає на заваді росту.",wiki:"The_Queen%27s_Gambit_(miniseries)"},
-{t:"The Prestige",mood:"на подумать",y:"2006",type:"фільм",rating:8.5,cat:"Нолан (раніше виключено)",cast:"Christian Bale, Hugh Jackman, Scarlett Johansson",syn:"Двоє фокусників-суперників доводять професійну ревність до одержимості й саморуйнування. Кожен приносить у жертву особисте життя заради ідеального трюку.",wiki:"The_Prestige_(film)"},
-{t:"Ozark",mood:"псіхо",y:"2017",type:"серіал",rating:8.4,cat:"Рекомендація",cast:"Jason Bateman, Laura Linney, Julia Garner",syn:"Фінансовий консультант змушений відмивати гроші картелю, щоб врятувати родину. Сімейний бізнес на межі закону поступово руйнує шлюб і психіку кожного.",wiki:"Ozark_(TV_series)"},
-{t:"Memento",mood:"псіхо",y:"2000",type:"фільм",rating:8.4,cat:"Нолан (раніше виключено)",cast:"Guy Pearce, Carrie-Anne Moss",syn:"Чоловік без короткочасної пам'яті розслідує вбивство дружини за допомогою нотаток і татуювань. Розповідь іде у зворотному порядку, повторюючи хаос його психіки.",wiki:"Memento_(film)"},
-{t:"Snatch",mood:"хаха",y:"2000",type:"фільм",rating:8.3,cat:"Гай Річі + Бред Пітт",cast:"Brad Pitt, Jason Statham, Benicio del Toro",syn:"Викрадений діамант зводить разом боксерських менеджерів, циган-боксерів і лондонських бандитів. Тут одночасно і Гай Річі, і Бред Пітт.",wiki:"Snatch_(film)"},
-{t:"Oppenheimer",mood:"епічно",y:"2023",type:"фільм",rating:8.3,cat:"Нолан (раніше виключено)",cast:"Cillian Murphy, Emily Blunt, Robert Downey Jr.",syn:"Батько атомної бомби переживає провину і політичне переслідування після Другої світової. Наукова амбіція і моральна травма ведуть до самознищення репутації.",wiki:"Oppenheimer_(film)"},
-{t:"The Wolf of Wall Street",mood:"хаха",y:"2013",type:"фільм",rating:8.2,cat:"Рекомендація",cast:"Leonardo DiCaprio, Jonah Hill, Margot Robbie",syn:"Молодий брокер будує імперію шахрайства на Волл-стріт і тоне в наркотиках та розкоші. Бізнес-хист і психологічна залежність від адреналіну ведуть до краху.",wiki:"The_Wolf_of_Wall_Street_(2013_film)"},
-{t:"A Beautiful Mind",mood:"мелодрама",y:"2001",type:"фільм",rating:8.2,cat:"Рекомендація",cast:"Russell Crowe, Jennifer Connelly",syn:"Геніальний математик розробляє теорію ігор, водночас борючись із шизофренією. Наукове визнання приходить лише після прийняття власної хвороби.",wiki:"A_Beautiful_Mind_(film)"},
-{t:"Shutter Island",mood:"псіхо",y:"2010",type:"фільм",rating:8.2,cat:"Рекомендація",cast:"Leonardo DiCaprio, Mark Ruffalo, Ben Kingsley",syn:"Маршал розслідує зникнення пацієнтки психлікарні на острові та занурюється у власну травму. Реальність і галюцинація зливаються до фінального одкровення.",wiki:"Shutter_Island_(film)"},
-{t:"Lock, Stock and Two Smoking Barrels",mood:"хаха",y:"1998",type:"фільм",rating:8.2,cat:"Гай Річі (раніше виключено)",cast:"Jason Flemyng, Dexter Fletcher, Nick Moran",syn:"Четверо друзів програють величезну суму в шахрайській грі в карти й мусять роздобути гроші за тиждень. Дебютний фільм Гая Річі.",wiki:"Lock,_Stock_and_Two_Smoking_Barrels"},
-{t:"Catch Me If You Can",mood:"хаха",y:"2002",type:"фільм",rating:8.1,cat:"Рекомендація",cast:"Leonardo DiCaprio, Tom Hanks, Christopher Walken",syn:"Підліток після розлучення батьків стає одним з найзухваліших аферистів в історії США. Травма родинного розпаду штовхає його будувати фальшиві особистості й статки.",wiki:"Catch_Me_If_You_Can"},
-{t:"Gone Girl",mood:"псіхо",y:"2014",type:"фільм",rating:8.1,cat:"Рекомендація",cast:"Ben Affleck, Rosamund Pike",syn:"Зникнення дружини перетворює чоловіка на головного підозрюваного в очах медіа. Психологічна маніпуляція розкриває, наскільки погано подружжя насправді знало одне одного.",wiki:"Gone_Girl_(film)"},
-{t:"Black Swan",mood:"псіхо",y:"2010",type:"фільм",rating:8.0,cat:"Рекомендація",cast:"Natalie Portman, Mila Kunis, Vincent Cassel",syn:"Балерина отримує головну роль і починає втрачати межу між сценічним образом і власною психікою. Прагнення досконалості перетворюється на саморуйнування.",wiki:"Black_Swan_(film)"},
-{t:"Marriage Story",mood:"мелодрама",y:"2019",type:"фільм",rating:8.0,cat:"Рекомендація",cast:"Adam Driver, Scarlett Johansson",syn:"Пара режисера й акторки проходить через розлучення, що оголює всі невисловлені образи шлюбу. Мелодрама без лиходіїв — лише двоє людей і біль зростання нарізно.",wiki:"Marriage_Story"},
-{t:"The Big Short",mood:"на подумать",y:"2015",type:"фільм",rating:7.8,cat:"Рекомендація",cast:"Christian Bale, Steve Carell, Ryan Gosling",syn:"Кілька інвесторів першими помічають назрівання іпотечної кризи 2008 року і ставлять проти всього ринку. Показує психологію жадібності системи зсередини.",wiki:"The_Big_Short_(film)"},
-{t:"Nightcrawler",mood:"псіхо",y:"2014",type:"фільм",rating:7.8,cat:"Рекомендація",cast:"Jake Gyllenhaal, Rene Russo",syn:"Безробітний знаходить нішу — знімати нічні трагедії для новин — і перетворює це на бізнес. Одержима амбіція без емпатії робить із нього хижака власного міста.",wiki:"Nightcrawler_(film)"},
-{t:"Manchester by the Sea",mood:"мелодрама",y:"2016",type:"фільм",rating:7.8,cat:"Рекомендація",cast:"Casey Affleck, Michelle Williams, Lucas Hedges",syn:"Чоловік повертається в рідне місто після смерті брата й мусить опікуватися племінником. Давня трагедія, яку він так і не пережив, не дає йому рухатися далі.",wiki:"Manchester_by_the_Sea_(film)"},
-{t:"The Gentlemen",mood:"хаха",y:"2019",type:"фільм",rating:7.8,cat:"Гай Річі (раніше виключено)",cast:"Matthew McConaughey, Charlie Hunnam, Henry Golding",syn:"Американський наркобарон у Лондоні намагається продати імперію канабісу і стикається зі зграєю охочих її відібрати.",wiki:"The_Gentlemen_(2019_film)"},
-{t:"Dunkirk",mood:"епічно",y:"2017",type:"фільм",rating:7.8,cat:"Нолан (раніше виключено)",cast:"Fionn Whitehead, Tom Hardy, Mark Rylance",syn:"Британські солдати оточені на пляжі Дюнкерка чекають евакуації під постійним обстрілом. Показує психологію виживання радше через напругу, ніж через сюжетні повороти.",wiki:"Dunkirk_(2017_film)"},
-{t:"Ocean's Eleven",mood:"хаха",y:"2001",type:"фільм",rating:7.8,cat:"Бред Пітт (раніше виключено)",cast:"George Clooney, Brad Pitt, Matt Damon",syn:"Виходець із в'язниці збирає команду з одинадцяти фахівців, щоб пограбувати три казино одночасно.",wiki:"Ocean%27s_Eleven_(2001_film)"},
-{t:"The Game",mood:"псіхо",y:"1997",type:"фільм",rating:7.7,cat:"Рекомендація",cast:"Michael Douglas, Sean Penn, Deborah Kara Unger",syn:"Багатий банкір отримує в подарунок від брата участь у загадковій грі, що поступово руйнує все його життя. Психологічний трилер Фінчера.",wiki:"The_Game_(1997_film)"},
-{t:"The Social Network",mood:"на подумать",y:"2010",type:"фільм",rating:7.7,cat:"Рекомендація",cast:"Jesse Eisenberg, Andrew Garfield, Justin Timberlake",syn:"Студент Гарварду створює Facebook після болючого розриву й соціального відторгнення. Успіх компанії коштує йому єдиного справжнього друга.",wiki:"The_Social_Network"},
-{t:"American Psycho",mood:"псіхо",y:"2000",type:"фільм",rating:7.6,cat:"Рекомендація",cast:"Christian Bale, Willem Dafoe, Reese Witherspoon",syn:"Успішний банкір з Волл-стріт веде подвійне життя серійного вбивці, одержимого статусом і зовнішністю.",wiki:"American_Psycho_(film)"},
-{t:"Fury",mood:"екшон",y:"2014",type:"фільм",rating:7.6,cat:"Бред Пітт (раніше виключено)",cast:"Brad Pitt, Shia LaBeouf, Logan Lerman",syn:"Екіпаж танка в останні тижні Другої світової війни в Німеччині.",wiki:"Fury_(2014_film)"},
-{t:"Moneyball",mood:"на подумать",y:"2011",type:"фільм",rating:7.6,cat:"Бред Пітт (раніше виключено)",cast:"Brad Pitt, Jonah Hill, Philip Seymour Hoffman",syn:"Генеральний менеджер бейсбольного клубу з мізерним бюджетом ламає систему скаутингу заради перемоги.",wiki:"Moneyball_(film)"},
-{t:"The Dropout",mood:"на подумать",y:"2022",type:"серіал",rating:7.5,cat:"Рекомендація",cast:"Amanda Seyfried, Naveen Andrews",syn:"Elizabeth Holmes кидає Стенфорд заради стартапу Theranos, що обіцяв революцію в аналізах крові. Амбіція довести собі й батькам власну геніальність доводить її до масштабної афери.",wiki:"The_Dropout_(TV_series)"},
-{t:"Molly's Game",mood:"на подумать",y:"2017",type:"фільм",rating:7.4,cat:"Рекомендація",cast:"Jessica Chastain, Idris Elba, Kevin Costner",syn:"Колишня олімпійська лижниця після травми будує підпільну імперію покеру для мільярдерів.",wiki:"Molly%27s_Game"},
-{t:"Tetris",mood:"хаха",y:"2023",type:"фільм",rating:7.4,cat:"Рекомендація",cast:"Taron Egerton, Nikita Yefremov",syn:"Американський підприємець бореться за права на гру Тетріс у радянській Москві 1988 року.",wiki:"Tetris_(film)"},
-{t:"Air",mood:"на подумать",y:"2023",type:"фільм",rating:7.4,cat:"Рекомендація",cast:"Matt Damon, Ben Affleck, Viola Davis",syn:"Nike ризикує всім бюджетом відділу баскетболу заради контракту з молодим Майклом Джорданом.",wiki:"Air_(2023_American_film)"},
-{t:"BlackBerry",mood:"хаха",y:"2023",type:"фільм",rating:7.3,cat:"Рекомендація",cast:"Jay Baruchel, Glenn Howerton",syn:"Двоє інженерів-мрійників створюють перший смартфон і втрачають контроль над власною компанією.",wiki:"BlackBerry_(film)"},
-{t:"WeCrashed",mood:"мелодрама",y:"2022",type:"серіал",rating:7.3,cat:"Рекомендація",cast:"Jared Leto, Anne Hathaway",syn:"Подружжя засновників WeWork будує культову компанію на харизмі й обіцянках змінити світ.",wiki:"WeCrashed"},
-{t:"Super Pumped",mood:"на подумать",y:"2022",type:"серіал",rating:7.3,cat:"Рекомендація",cast:"Joseph Gordon-Levitt, Kyle Chandler",syn:"Travis Kalanick будує Uber на агресії й переконанні, що правила існують для інших.",wiki:"Super_Pumped"},
-{t:"Tenet",mood:"екшон",y:"2020",type:"фільм",rating:7.3,cat:"Нолан (раніше виключено)",cast:"John David Washington, Robert Pattinson, Elizabeth Debicki",syn:"Агент опановує технологію обернення часу, щоб зупинити загрозу з майбутнього.",wiki:"Tenet_(film)"},
-{t:"RocknRolla",mood:"хаха",y:"2008",type:"фільм",rating:7.3,cat:"Гай Річі (раніше виключено)",cast:"Gerard Butler, Tom Wilkinson, Idris Elba",syn:"Лондонські гангстери, забудовник-хабарник і російський олігарх переплітаються навколо земельної угоди.",wiki:"RocknRolla"},
-{t:"Revolver",mood:"псіхо",y:"2005",type:"фільм",rating:6.5,cat:"Вже знаєш",cast:"Jason Statham, Ray Liotta, Vincent Pastore",syn:"Шахрай виходить з в'язниці з системою обману, що ніколи не програє, і опиняється в грі, яку насправді веде його власна свідомість.",wiki:"Revolver_(2005_film)"}
+{t:"Breaking Bad",mood:"культове",y:"2008",type:"серіал",rating:9.5,cat:"Рекомендація",cast:"Bryan Cranston, Aaron Paul, Anna Gunn",syn:"Вчитель хімії дізнається про невиліковний рак і починає варити метамфетамін, щоб забезпечити родину. Страх бідності й смерті поступово перетворює тиху людину на найнебезпечнішого злочинця міста.",wiki:"Breaking_Bad",d:"Gilligan"},
+{t:"The Sopranos",mood:"культове",y:"1999",type:"серіал",rating:9.2,cat:"Рекомендація",cast:"James Gandolfini, Edie Falco, Lorraine Bracco",syn:"Бос мафії з Нью-Джерсі починає ходити до психотерапевта через панічні атаки. Керівництво кримінальним бізнесом і розбір травм дитинства йдуть паралельно.",wiki:"The_Sopranos",d:"Chase"},
+{t:"Better Call Saul",mood:"на подумать",y:"2015",type:"серіал",rating:8.9,cat:"Рекомендація",cast:"Bob Odenkirk, Rhea Seehorn, Jonathan Banks",syn:"Приквел до Breaking Bad про адвоката, який усе життя в тіні успішного брата. Відчуття несправедливості й амбіція штовхають його до афер на межі закону.",wiki:"Better_Call_Saul",d:"Gould"},
+{t:"Succession",mood:"на подумать",y:"2018",type:"серіал",rating:8.8,cat:"Рекомендація",cast:"Brian Cox, Jeremy Strong, Sarah Snook",syn:"Старіючий магнат медіаімперії не може обрати спадкоємця серед власних дітей. Діти воюють за трон і водночас за батьківське визнання, якого ніколи не отримували.",wiki:"Succession_(TV_series)",d:"Armstrong"},
+{t:"Peaky Blinders",mood:"епічно",y:"2013",type:"серіал",rating:8.8,cat:"Рекомендація",cast:"Cillian Murphy, Paul Anderson, Sophie Rundle",syn:"Ветеран Першої світової з ПТСР перетворює вуличну банду Бірмінгема на легальну бізнес-імперію. Травма війни живить його холодний розрахунок і водночас руйнує особисте життя.",wiki:"Peaky_Blinders",d:"Knight"},
+{t:"Inception",mood:"епічно",y:"2010",type:"фільм",rating:8.8,cat:"Нолан (раніше виключено)",cast:"Leonardo DiCaprio, Joseph Gordon-Levitt, Elliot Page",syn:"Злодій, що краде ідеї уві сні, отримує шанс повернутися додому в обмін на імплантацію чужої думки. Провина за смерть дружини переслідує його на кожному рівні сну.",wiki:"Inception",d:"Nolan"},
+{t:"Interstellar",mood:"епічно",y:"2014",type:"фільм",rating:8.7,cat:"Вже знаєш",cast:"Matthew McConaughey, Anne Hathaway, Jessica Chastain",syn:"Фермер-пілот залишає доньку заради польоту крізь червоточину в пошуках нового дому для людства.",wiki:"Interstellar_(film)",d:"Nolan"},
+{t:"Se7en",mood:"псіхо",y:"1995",type:"фільм",rating:8.6,cat:"Бред Пітт (раніше виключено)",cast:"Brad Pitt, Morgan Freeman, Kevin Spacey",syn:"Два детективи ганяються за вбивцею, який карає жертв за сімома смертними гріхами. Молодий напарник поступово втрачає психологічну стійкість перед фіналом.",wiki:"Se7en",d:"Fincher"},
+{t:"Whiplash",mood:"псіхо",y:"2014",type:"фільм",rating:8.5,cat:"Рекомендація",cast:"Miles Teller, J.K. Simmons",syn:"Молодий барабанщик потрапляє під крило викладача-тирана, що ламає учнів заради ідеї величі. Межа між тренуванням таланту й психологічним катуванням стирається.",wiki:"Whiplash_(2014_film)",d:"Chazelle"},
+{t:"Mr. Robot",mood:"псіхо",y:"2015",type:"серіал",rating:8.5,cat:"Рекомендація",cast:"Rami Malek, Christian Slater, Carly Chaikin",syn:"Хакер із соціальною тривожністю і дисоціативним розладом приєднується до групи, що хоче знищити світову корпорацію боргів. Межа між реальністю і його психікою розмивається.",wiki:"Mr._Robot",d:"Esmail"},
+{t:"The Usual Suspects",mood:"на подумать",y:"1995",type:"фільм",rating:8.5,cat:"Рекомендація",cast:"Kevin Spacey, Gabriel Byrne, Benicio del Toro",syn:"П'ятеро злочинців після пограбування опиняються втягнутими в план міфічного злочинного генія. Психологічна гра з глядачем, з фіналом-твістом.",wiki:"The_Usual_Suspects",d:"Singer"},
+{t:"The Queen's Gambit",mood:"на подумать",y:"2020",type:"серіал",rating:8.5,cat:"Рекомендація",cast:"Anya Taylor-Joy, Bill Camp",syn:"Сирота з дитинства виявляє шаховий геній під впливом транквілізаторів. Залежність, яка колись рятувала її психіку, стає на заваді росту.",wiki:"The_Queen%27s_Gambit_(miniseries)",d:"Frank"},
+{t:"The Prestige",mood:"на подумать",y:"2006",type:"фільм",rating:8.5,cat:"Нолан (раніше виключено)",cast:"Christian Bale, Hugh Jackman, Scarlett Johansson",syn:"Двоє фокусників-суперників доводять професійну ревність до одержимості й саморуйнування. Кожен приносить у жертву особисте життя заради ідеального трюку.",wiki:"The_Prestige_(film)",d:"Nolan"},
+{t:"Ozark",mood:"псіхо",y:"2017",type:"серіал",rating:8.4,cat:"Рекомендація",cast:"Jason Bateman, Laura Linney, Julia Garner",syn:"Фінансовий консультант змушений відмивати гроші картелю, щоб врятувати родину. Сімейний бізнес на межі закону поступово руйнує шлюб і психіку кожного.",wiki:"Ozark_(TV_series)",d:"Dubuque"},
+{t:"Memento",mood:"псіхо",y:"2000",type:"фільм",rating:8.4,cat:"Нолан (раніше виключено)",cast:"Guy Pearce, Carrie-Anne Moss",syn:"Чоловік без короткочасної пам'яті розслідує вбивство дружини за допомогою нотаток і татуювань. Розповідь іде у зворотному порядку, повторюючи хаос його психіки.",wiki:"Memento_(film)",d:"Nolan"},
+{t:"Snatch",mood:"хаха",y:"2000",type:"фільм",rating:8.3,cat:"Гай Річі + Бред Пітт",cast:"Brad Pitt, Jason Statham, Benicio del Toro",syn:"Викрадений діамант зводить разом боксерських менеджерів, циган-боксерів і лондонських бандитів. Тут одночасно і Гай Річі, і Бред Пітт.",wiki:"Snatch_(film)",d:"Ritchie"},
+{t:"Oppenheimer",mood:"епічно",y:"2023",type:"фільм",rating:8.3,cat:"Нолан (раніше виключено)",cast:"Cillian Murphy, Emily Blunt, Robert Downey Jr.",syn:"Батько атомної бомби переживає провину і політичне переслідування після Другої світової. Наукова амбіція і моральна травма ведуть до самознищення репутації.",wiki:"Oppenheimer_(film)",d:"Nolan"},
+{t:"The Wolf of Wall Street",mood:"хаха",y:"2013",type:"фільм",rating:8.2,cat:"Рекомендація",cast:"Leonardo DiCaprio, Jonah Hill, Margot Robbie",syn:"Молодий брокер будує імперію шахрайства на Волл-стріт і тоне в наркотиках та розкоші. Бізнес-хист і психологічна залежність від адреналіну ведуть до краху.",wiki:"The_Wolf_of_Wall_Street_(2013_film)",d:"Scorsese"},
+{t:"A Beautiful Mind",mood:"мелодрама",y:"2001",type:"фільм",rating:8.2,cat:"Рекомендація",cast:"Russell Crowe, Jennifer Connelly",syn:"Геніальний математик розробляє теорію ігор, водночас борючись із шизофренією. Наукове визнання приходить лише після прийняття власної хвороби.",wiki:"A_Beautiful_Mind_(film)",d:"Howard"},
+{t:"Shutter Island",mood:"псіхо",y:"2010",type:"фільм",rating:8.2,cat:"Рекомендація",cast:"Leonardo DiCaprio, Mark Ruffalo, Ben Kingsley",syn:"Маршал розслідує зникнення пацієнтки психлікарні на острові та занурюється у власну травму. Реальність і галюцинація зливаються до фінального одкровення.",wiki:"Shutter_Island_(film)",d:"Scorsese"},
+{t:"Lock, Stock and Two Smoking Barrels",mood:"хаха",y:"1998",type:"фільм",rating:8.2,cat:"Гай Річі (раніше виключено)",cast:"Jason Flemyng, Dexter Fletcher, Nick Moran",syn:"Четверо друзів програють величезну суму в шахрайській грі в карти й мусять роздобути гроші за тиждень. Дебютний фільм Гая Річі.",wiki:"Lock,_Stock_and_Two_Smoking_Barrels",d:"Ritchie"},
+{t:"Catch Me If You Can",mood:"хаха",y:"2002",type:"фільм",rating:8.1,cat:"Рекомендація",cast:"Leonardo DiCaprio, Tom Hanks, Christopher Walken",syn:"Підліток після розлучення батьків стає одним з найзухваліших аферистів в історії США. Травма родинного розпаду штовхає його будувати фальшиві особистості й статки.",wiki:"Catch_Me_If_You_Can",d:"Spielberg"},
+{t:"Gone Girl",mood:"псіхо",y:"2014",type:"фільм",rating:8.1,cat:"Рекомендація",cast:"Ben Affleck, Rosamund Pike",syn:"Зникнення дружини перетворює чоловіка на головного підозрюваного в очах медіа. Психологічна маніпуляція розкриває, наскільки погано подружжя насправді знало одне одного.",wiki:"Gone_Girl_(film)",d:"Fincher"},
+{t:"Black Swan",mood:"псіхо",y:"2010",type:"фільм",rating:8.0,cat:"Рекомендація",cast:"Natalie Portman, Mila Kunis, Vincent Cassel",syn:"Балерина отримує головну роль і починає втрачати межу між сценічним образом і власною психікою. Прагнення досконалості перетворюється на саморуйнування.",wiki:"Black_Swan_(film)",d:"Aronofsky"},
+{t:"Marriage Story",mood:"мелодрама",y:"2019",type:"фільм",rating:8.0,cat:"Рекомендація",cast:"Adam Driver, Scarlett Johansson",syn:"Пара режисера й акторки проходить через розлучення, що оголює всі невисловлені образи шлюбу. Мелодрама без лиходіїв — лише двоє людей і біль зростання нарізно.",wiki:"Marriage_Story",d:"Baumbach"},
+{t:"The Big Short",mood:"на подумать",y:"2015",type:"фільм",rating:7.8,cat:"Рекомендація",cast:"Christian Bale, Steve Carell, Ryan Gosling",syn:"Кілька інвесторів першими помічають назрівання іпотечної кризи 2008 року і ставлять проти всього ринку. Показує психологію жадібності системи зсередини.",wiki:"The_Big_Short_(film)",d:"McKay"},
+{t:"Nightcrawler",mood:"псіхо",y:"2014",type:"фільм",rating:7.8,cat:"Рекомендація",cast:"Jake Gyllenhaal, Rene Russo",syn:"Безробітний знаходить нішу — знімати нічні трагедії для новин — і перетворює це на бізнес. Одержима амбіція без емпатії робить із нього хижака власного міста.",wiki:"Nightcrawler_(film)",d:"Gilroy"},
+{t:"Manchester by the Sea",mood:"мелодрама",y:"2016",type:"фільм",rating:7.8,cat:"Рекомендація",cast:"Casey Affleck, Michelle Williams, Lucas Hedges",syn:"Чоловік повертається в рідне місто після смерті брата й мусить опікуватися племінником. Давня трагедія, яку він так і не пережив, не дає йому рухатися далі.",wiki:"Manchester_by_the_Sea_(film)",d:"Lonergan"},
+{t:"The Gentlemen",mood:"хаха",y:"2019",type:"фільм",rating:7.8,cat:"Гай Річі (раніше виключено)",cast:"Matthew McConaughey, Charlie Hunnam, Henry Golding",syn:"Американський наркобарон у Лондоні намагається продати імперію канабісу і стикається зі зграєю охочих її відібрати.",wiki:"The_Gentlemen_(2019_film)",d:"Ritchie"},
+{t:"Dunkirk",mood:"епічно",y:"2017",type:"фільм",rating:7.8,cat:"Нолан (раніше виключено)",cast:"Fionn Whitehead, Tom Hardy, Mark Rylance",syn:"Британські солдати оточені на пляжі Дюнкерка чекають евакуації під постійним обстрілом. Показує психологію виживання радше через напругу, ніж через сюжетні повороти.",wiki:"Dunkirk_(2017_film)",d:"Nolan"},
+{t:"Ocean's Eleven",mood:"хаха",y:"2001",type:"фільм",rating:7.8,cat:"Бред Пітт (раніше виключено)",cast:"George Clooney, Brad Pitt, Matt Damon",syn:"Виходець із в'язниці збирає команду з одинадцяти фахівців, щоб пограбувати три казино одночасно.",wiki:"Ocean%27s_Eleven_(2001_film)",d:"Soderbergh"},
+{t:"The Game",mood:"псіхо",y:"1997",type:"фільм",rating:7.7,cat:"Рекомендація",cast:"Michael Douglas, Sean Penn, Deborah Kara Unger",syn:"Багатий банкір отримує в подарунок від брата участь у загадковій грі, що поступово руйнує все його життя. Психологічний трилер Фінчера.",wiki:"The_Game_(1997_film)",d:"Fincher"},
+{t:"The Social Network",mood:"на подумать",y:"2010",type:"фільм",rating:7.7,cat:"Рекомендація",cast:"Jesse Eisenberg, Andrew Garfield, Justin Timberlake",syn:"Студент Гарварду створює Facebook після болючого розриву й соціального відторгнення. Успіх компанії коштує йому єдиного справжнього друга.",wiki:"The_Social_Network",d:"Fincher"},
+{t:"American Psycho",mood:"псіхо",y:"2000",type:"фільм",rating:7.6,cat:"Рекомендація",cast:"Christian Bale, Willem Dafoe, Reese Witherspoon",syn:"Успішний банкір з Волл-стріт веде подвійне життя серійного вбивці, одержимого статусом і зовнішністю.",wiki:"American_Psycho_(film)",d:"Harron"},
+{t:"Fury",mood:"екшон",y:"2014",type:"фільм",rating:7.6,cat:"Бред Пітт (раніше виключено)",cast:"Brad Pitt, Shia LaBeouf, Logan Lerman",syn:"Екіпаж танка в останні тижні Другої світової війни в Німеччині.",wiki:"Fury_(2014_film)",d:"Ayer"},
+{t:"Moneyball",mood:"на подумать",y:"2011",type:"фільм",rating:7.6,cat:"Бред Пітт (раніше виключено)",cast:"Brad Pitt, Jonah Hill, Philip Seymour Hoffman",syn:"Генеральний менеджер бейсбольного клубу з мізерним бюджетом ламає систему скаутингу заради перемоги.",wiki:"Moneyball_(film)",d:"Miller"},
+{t:"The Dropout",mood:"на подумать",y:"2022",type:"серіал",rating:7.5,cat:"Рекомендація",cast:"Amanda Seyfried, Naveen Andrews",syn:"Elizabeth Holmes кидає Стенфорд заради стартапу Theranos, що обіцяв революцію в аналізах крові. Амбіція довести собі й батькам власну геніальність доводить її до масштабної афери.",wiki:"The_Dropout_(TV_series)",d:"Meriwether"},
+{t:"Molly's Game",mood:"на подумать",y:"2017",type:"фільм",rating:7.4,cat:"Рекомендація",cast:"Jessica Chastain, Idris Elba, Kevin Costner",syn:"Колишня олімпійська лижниця після травми будує підпільну імперію покеру для мільярдерів.",wiki:"Molly%27s_Game",d:"Sorkin"},
+{t:"Tetris",mood:"хаха",y:"2023",type:"фільм",rating:7.4,cat:"Рекомендація",cast:"Taron Egerton, Nikita Yefremov",syn:"Американський підприємець бореться за права на гру Тетріс у радянській Москві 1988 року.",wiki:"Tetris_(film)",d:"Baird"},
+{t:"Air",mood:"на подумать",y:"2023",type:"фільм",rating:7.4,cat:"Рекомендація",cast:"Matt Damon, Ben Affleck, Viola Davis",syn:"Nike ризикує всім бюджетом відділу баскетболу заради контракту з молодим Майклом Джорданом.",wiki:"Air_(2023_American_film)",d:"Affleck"},
+{t:"BlackBerry",mood:"хаха",y:"2023",type:"фільм",rating:7.3,cat:"Рекомендація",cast:"Jay Baruchel, Glenn Howerton",syn:"Двоє інженерів-мрійників створюють перший смартфон і втрачають контроль над власною компанією.",wiki:"BlackBerry_(film)",d:"Johnson"},
+{t:"WeCrashed",mood:"мелодрама",y:"2022",type:"серіал",rating:7.3,cat:"Рекомендація",cast:"Jared Leto, Anne Hathaway",syn:"Подружжя засновників WeWork будує культову компанію на харизмі й обіцянках змінити світ.",wiki:"WeCrashed",d:"Requa"},
+{t:"Super Pumped",mood:"на подумать",y:"2022",type:"серіал",rating:7.3,cat:"Рекомендація",cast:"Joseph Gordon-Levitt, Kyle Chandler",syn:"Travis Kalanick будує Uber на агресії й переконанні, що правила існують для інших.",wiki:"Super_Pumped",d:"Koppelman"},
+{t:"Tenet",mood:"екшон",y:"2020",type:"фільм",rating:7.3,cat:"Нолан (раніше виключено)",cast:"John David Washington, Robert Pattinson, Elizabeth Debicki",syn:"Агент опановує технологію обернення часу, щоб зупинити загрозу з майбутнього.",wiki:"Tenet_(film)",d:"Nolan"},
+{t:"RocknRolla",mood:"хаха",y:"2008",type:"фільм",rating:7.3,cat:"Гай Річі (раніше виключено)",cast:"Gerard Butler, Tom Wilkinson, Idris Elba",syn:"Лондонські гангстери, забудовник-хабарник і російський олігарх переплітаються навколо земельної угоди.",wiki:"RocknRolla",d:"Ritchie"},
+{t:"Revolver",mood:"псіхо",y:"2005",type:"фільм",rating:6.5,cat:"Вже знаєш",cast:"Jason Statham, Ray Liotta, Vincent Pastore",syn:"Шахрай виходить з в'язниці з системою обману, що ніколи не програє, і опиняється в грі, яку насправді веде його власна свідомість.",wiki:"Revolver_(2005_film)",d:"Ritchie"}
 ];
 
 function timeAgo(dateStr){
@@ -329,6 +330,11 @@ document.getElementById("rateModalSubmit").addEventListener("click", async funct
   const rating = document.getElementById("rateModalRating").value.trim();
   const comment = document.getElementById("rateModalComment").value.trim();
   const hint = document.getElementById("rateModalHint");
+  const ratingNum = parseFloat(rating);
+  if(rating === "" || isNaN(ratingNum) || ratingNum < 1 || ratingNum > 10){
+    if(hint){ hint.textContent = "Оцінка має бути від 1 до 10."; hint.style.color = "#f87171"; }
+    return;
+  }
   btn.disabled = true;
   btn.textContent = "Надсилаємо…";
   if(hint){ hint.textContent = ""; hint.style.color = ""; }
@@ -336,7 +342,7 @@ document.getElementById("rateModalSubmit").addEventListener("click", async funct
     const res = await fetch(RATE_WORKER_URL, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ title: __rateModalTitle, name: name, rating: rating, comment: comment })
+      body: JSON.stringify({ title: __rateModalTitle, name: name, rating: String(ratingNum), comment: comment })
     });
     const data = await res.json();
     if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
@@ -604,6 +610,7 @@ function buildSeedPost(item, ratings, likes, seenEntries){
         '<div class="movie-info">' +
           '<p class="movie-title">'+item.t+' ('+item.y+')</p>' +
           '<p class="movie-rating">★ '+item.rating.toFixed(1)+' · '+item.type+communityLine+'</p>' +
+          (item.d ? '<p class="movie-director">Режисер: '+escapeAttr(item.d)+'</p>' : '') +
           '<p class="movie-cast">'+item.cast+'</p>' +
           '<p class="post-body">'+item.syn+'</p>' +
         '</div>' +
@@ -719,12 +726,14 @@ function parseProposeBody(body){
   body = body || "";
   const otM = body.match(/Оригінальна назва:\s*([^\n]*)/);
   const yearM = body.match(/Рік:\s*([^\n]*)/);
+  const directorM = body.match(/Режисер:\s*([^\n]*)/);
   const posterM = body.match(/Постер:\s*([^\n]*)/);
   const descM = body.match(/Опис:\s*([\s\S]*?)\n\nКоментар тредчана:/);
   const commentM = body.match(/Коментар тредчана:\s*([\s\S]*)/);
   return {
     originalTitle: otM ? otM[1].trim() : "",
     year: yearM ? yearM[1].trim() : "",
+    director: directorM ? directorM[1].trim() : "",
     poster: posterM ? posterM[1].trim() : "",
     description: descM ? descM[1].trim() : "",
     comment: commentM ? commentM[1].trim() : body
@@ -740,6 +749,7 @@ function buildCommunityPost(issue, title){
   const displayTitle = parsed.originalTitle && parsed.originalTitle !== title ? title + " (" + parsed.originalTitle + ")" : title;
   const metaBits = [];
   if(parsed.year) metaBits.push(parsed.year);
+  if(parsed.director) metaBits.push("Режисер: "+parsed.director);
   metaBits.push("пропозиція тредчана");
   const posterInner = parsed.poster ? "" : "ФІ";
   const posterAttr = parsed.poster ? "" : ' data-title="'+escapeAttr(title)+'"';
@@ -943,6 +953,37 @@ function extractYearFromText(text){
   return m ? m[0] : "";
 }
 
+async function fetchDirectorSurname(pageTitle, lang){
+  try{
+    const ppUrl = "https://"+lang+".wikipedia.org/w/api.php?action=query&prop=pageprops&format=json&origin=*&titles="+encodeURIComponent(pageTitle);
+    const ppRes = await fetch(ppUrl);
+    const ppData = await ppRes.json();
+    const pages = ppData.query && ppData.query.pages;
+    if(!pages) return "";
+    const page = pages[Object.keys(pages)[0]];
+    const wbId = page && page.pageprops && page.pageprops.wikibase_item;
+    if(!wbId) return "";
+    async function claimLabel(prop){
+      try{
+        const clRes = await fetch("https://www.wikidata.org/w/api.php?action=wbgetclaims&entity="+wbId+"&property="+prop+"&format=json&origin=*");
+        const clData = await clRes.json();
+        const claims = clData.claims && clData.claims[prop];
+        if(!claims || !claims.length) return null;
+        const id = claims[0].mainsnak && claims[0].mainsnak.datavalue && claims[0].mainsnak.datavalue.value && claims[0].mainsnak.datavalue.value.id;
+        if(!id) return null;
+        const labRes = await fetch("https://www.wikidata.org/w/api.php?action=wbgetentities&ids="+id+"&props=labels&languages=en&format=json&origin=*");
+        const labData = await labRes.json();
+        return (labData.entities && labData.entities[id] && labData.entities[id].labels && labData.entities[id].labels.en && labData.entities[id].labels.en.value) || null;
+      }catch(e){ return null; }
+    }
+    let label = await claimLabel("P57");
+    if(!label) label = await claimLabel("P170");
+    if(!label) return "";
+    const parts = label.trim().split(/\s+/);
+    return parts[parts.length-1];
+  }catch(e){ return ""; }
+}
+
 async function fetchWikiMovieInfo(title, lang){
   try{
     const searchUrl = "https://"+lang+".wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=5&srsearch="+encodeURIComponent(title);
@@ -987,7 +1028,8 @@ async function fetchWikiMovieInfo(title, lang){
     } else {
       originalTitle = pageTitle;
     }
-    return { poster: poster, description: description, year: year, originalTitle: (originalTitle || pageTitle), pageTitle: pageTitle, lang: lang };
+    const director = await fetchDirectorSurname(pageTitle, lang);
+    return { poster: poster, description: description, year: year, originalTitle: (originalTitle || pageTitle), pageTitle: pageTitle, lang: lang, director: director };
   }catch(e){ return null; }
 }
 
@@ -1013,7 +1055,10 @@ function renderProposePreview(info){
   img.src = info.poster || "";
   img.style.display = info.poster ? "block" : "none";
   document.getElementById("proposePreviewTitle").textContent = info.originalTitle || info.pageTitle || "";
-  document.getElementById("proposePreviewMeta").textContent = info.year ? ("Рік: "+info.year) : "";
+  const metaParts = [];
+  if(info.year) metaParts.push("Рік: "+info.year);
+  if(info.director) metaParts.push("Режисер: "+info.director);
+  document.getElementById("proposePreviewMeta").textContent = metaParts.join(" · ");
   document.getElementById("proposePreviewDesc").textContent = info.description ? info.description.slice(0,220) : "";
   if(preview) preview.classList.add("active");
 }
@@ -1079,7 +1124,8 @@ document.getElementById("proposeModalSubmit").addEventListener("click", async fu
         year: (proposeSearchResult && proposeSearchResult.year) || "",
         originalTitle: (proposeSearchResult && proposeSearchResult.originalTitle) || "",
         description: (proposeSearchResult && proposeSearchResult.description) || "",
-        poster: (proposeSearchResult && proposeSearchResult.poster) || ""
+        poster: (proposeSearchResult && proposeSearchResult.poster) || "",
+        director: (proposeSearchResult && proposeSearchResult.director) || ""
       })
     });
     const data = await res.json();
