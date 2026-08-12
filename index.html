@@ -45,6 +45,16 @@ a{color:inherit;}
 .movie-title{font-weight:600;font-size:14px;margin:0;color:var(--text);}
 .movie-rating{font-size:12px;color:var(--gold);margin-top:3px;}
 .movie-director{font-size:11px;color:var(--text2);margin-top:2px;}
+.admin-toggle{position:absolute;top:14px;right:14px;background:none;border:1px solid var(--border);color:var(--text2);border-radius:14px;min-width:28px;height:28px;padding:0 8px;font-size:13px;cursor:pointer;}
+.admin-toggle.active{background:#fbbf24;color:#000;border-color:#fbbf24;}
+.admin-actions{display:flex;gap:8px;margin-top:8px;}
+.admin-btn{border-radius:14px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);font-family:inherit;background:none;color:var(--text2);}
+.approve-btn{border-color:#4ade80;color:#4ade80;}
+.approve-btn:hover{background:#4ade80;color:#000;}
+.reject-btn{border-color:#f87171;color:#f87171;}
+.reject-btn:hover{background:#f87171;color:#000;}
+.comment-delete-btn{background:none;border:none;color:#f87171;font-size:11px;cursor:pointer;font-family:inherit;padding:0;margin-left:6px;}
+.comment-delete-btn:hover{text-decoration:underline;}
 .movie-cast{font-size:11px;color:var(--text2);margin-top:2px;}
 .actions{display:flex;gap:22px;margin-top:10px;color:var(--text2);}
 .actions svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;display:block;}
@@ -103,6 +113,7 @@ button.rate-link{background:none;font-family:inherit;cursor:pointer;}
 <body>
 <div class="app">
   <header class="topbar">
+    <button type="button" id="adminToggle" class="admin-toggle">⚙</button>
     <h1>Тредчани кіно</h1>
     <p>Національний перелік улюблених фільмів і серіалів</p>
   </header>
@@ -362,6 +373,7 @@ function parseRatingIssues(issues){
   issues.forEach(issue=>{
     if(issue.pull_request) return;
     if(issue.title.indexOf("[Оцінка]")!==0) return;
+    if(issue.state !== "open") return;
     const movieTitle = issue.title.replace("[Оцінка]","").trim();
     const body = issue.body || "";
     const nameMatch = body.match(/Ім'я:\s*([^\n]*)/i);
@@ -606,10 +618,10 @@ function buildSeedPost(item, ratings, likes, seenEntries){
     '<div class="post-main">' +
       '<div class="post-head"><span class="handle">@olegforbiz</span><span class="meta">оригінальний перелік</span><span class="tag">'+item.cat+'</span></div>' +
       '<div class="movie-card">' +
-        '<div class="poster" data-wiki="'+item.wiki+'" data-title="'+escapeAttr(item.t)+'" data-type="'+item.type+'">'+initials+'</div>' +
+        (item.poster ? '<div class="poster"><img src="'+item.poster+'" alt="'+escapeAttr(item.t)+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px;"></div>' : '<div class="poster" data-wiki="'+item.wiki+'" data-title="'+escapeAttr(item.t)+'" data-type="'+item.type+'">'+initials+'</div>') +
         '<div class="movie-info">' +
           '<p class="movie-title">'+item.t+' ('+item.y+')</p>' +
-          '<p class="movie-rating">★ '+item.rating.toFixed(1)+' · '+item.type+communityLine+'</p>' +
+          (item.rating>0 ? '<p class="movie-rating">★ '+item.rating.toFixed(1)+' · '+item.type+communityLine+'</p>' : '<p class="movie-rating">'+item.type+communityLine+'</p>') +
           (item.d ? '<p class="movie-director">Режисер: '+escapeAttr(item.d)+'</p>' : '') +
           '<p class="movie-cast">'+item.cast+'</p>' +
           '<p class="post-body">'+item.syn+'</p>' +
@@ -640,6 +652,14 @@ function buildSeedPost(item, ratings, likes, seenEntries){
       span.className = "comment-handle";
       span.textContent = "@"+r.name+(r.rating!==null ? " ("+r.rating+"/10)" : "");
       head.appendChild(span);
+      if(isAdmin){
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "comment-delete-btn";
+        delBtn.textContent = "✕ видалити";
+        delBtn.addEventListener("click", function(){ deleteRatingEntry(r.number); });
+        head.appendChild(delBtn);
+      }
       c.appendChild(head);
       const bodyP = document.createElement("p");
       bodyP.className = "comment-body";
@@ -657,6 +677,14 @@ function buildSeedPost(item, ratings, likes, seenEntries){
         rspan.textContent = "@"+rep.name;
         rp.appendChild(rspan);
         rp.appendChild(document.createTextNode(" "+rep.text));
+        if(isAdmin){
+          const rdelBtn = document.createElement("button");
+          rdelBtn.type = "button";
+          rdelBtn.className = "comment-delete-btn";
+          rdelBtn.textContent = "✕";
+          rdelBtn.addEventListener("click", function(){ deleteReplyEntry(rep.id); });
+          rp.appendChild(rdelBtn);
+        }
         replyList.appendChild(rp);
       });
 
@@ -728,6 +756,7 @@ function parseProposeBody(body){
   const yearM = body.match(/Рік:\s*([^\n]*)/);
   const directorM = body.match(/Режисер:\s*([^\n]*)/);
   const posterM = body.match(/Постер:\s*([^\n]*)/);
+  const typeM = body.match(/Тип:\s*([^\n]*)/);
   const descM = body.match(/Опис:\s*([\s\S]*?)\n\nКоментар тредчана:/);
   const commentM = body.match(/Коментар тредчана:\s*([\s\S]*)/);
   return {
@@ -735,6 +764,7 @@ function parseProposeBody(body){
     year: yearM ? yearM[1].trim() : "",
     director: directorM ? directorM[1].trim() : "",
     poster: posterM ? posterM[1].trim() : "",
+    type: typeM ? typeM[1].trim() : "",
     description: descM ? descM[1].trim() : "",
     comment: commentM ? commentM[1].trim() : body
   };
@@ -777,6 +807,23 @@ function buildCommunityPost(issue, title){
     img.style.objectFit = "cover";
     img.style.borderRadius = "6px";
     posterEl.appendChild(img);
+  }
+  if(isAdmin){
+    const adminDiv = document.createElement("div");
+    adminDiv.className = "admin-actions";
+    const approveBtn = document.createElement("button");
+    approveBtn.type = "button";
+    approveBtn.className = "admin-btn approve-btn";
+    approveBtn.textContent = "Додати в рейтинг";
+    approveBtn.addEventListener("click", function(){ approveProposal(issue.number, title); });
+    const rejectBtn = document.createElement("button");
+    rejectBtn.type = "button";
+    rejectBtn.className = "admin-btn reject-btn";
+    rejectBtn.textContent = "Відхилити";
+    rejectBtn.addEventListener("click", function(){ rejectProposal(issue.number, title); });
+    adminDiv.appendChild(approveBtn);
+    adminDiv.appendChild(rejectBtn);
+    post.querySelector(".post-main").appendChild(adminDiv);
   }
   return post;
 }
@@ -822,13 +869,15 @@ function renderOfficial(ratingsMap){
   const el = document.getElementById("feed-official");
   el.innerHTML = "";
   const typeValues = ["фільм","серіал"];
-  let source = typeFilter === "all" ? SEED : SEED.filter(item=>item.type===typeFilter);
+  const allSource = SEED.concat(lastApprovedItems);
+  let source = typeFilter === "all" ? allSource : allSource.filter(item=>item.type===typeFilter);
   if(moodFilter) source = source.filter(item=>item.mood===moodFilter);
   const scored = source.map(item=>{
     const ratings = ratingsMap[item.t] || [];
     const rated = ratings.filter(r=>r.rating!=null);
     const avgCommunity = rated.length ? (rated.reduce((s,r)=>s+r.rating,0)/rated.length) : null;
-    const combined = avgCommunity!=null ? (item.rating+avgCommunity)/2 : item.rating;
+    const hasOwnRating = item.rating > 0;
+    const combined = avgCommunity!=null ? (hasOwnRating ? (item.rating+avgCommunity)/2 : avgCommunity) : (hasOwnRating ? item.rating : 0);
     return {item, ratings, combined};
   });
   scored.sort((a,b)=>b.combined-a.combined);
@@ -861,7 +910,7 @@ function renderCommunity(issues, ok){
     el.innerHTML = '<p class="empty-state">Не вдалось завантажити пропозиції з GitHub. Спробуй відкрити репозиторій напряму.</p>';
     return;
   }
-  const subs = issues.filter(i=>!i.pull_request && i.title.indexOf("[Фільм]")===0);
+  const subs = issues.filter(i=>!i.pull_request && i.state==="open" && i.title.indexOf("[Фільм]")===0);
   el.innerHTML = "";
   if(subs.length===0){
     el.innerHTML = '<p class="empty-state">Поки що пропозицій немає. Стань першим — тисни «Запропонувати фільм» вгорі.</p>';
@@ -1029,7 +1078,9 @@ async function fetchWikiMovieInfo(title, lang){
       originalTitle = pageTitle;
     }
     const director = await fetchDirectorSurname(pageTitle, lang);
-    return { poster: poster, description: description, year: year, originalTitle: (originalTitle || pageTitle), pageTitle: pageTitle, lang: lang, director: director };
+    const seriesRe = lang === "uk" ? /серіал/i : /tv series|television series/i;
+    const mediaType = seriesRe.test(sum.description || "") ? "серіал" : "фільм";
+    return { poster: poster, description: description, year: year, originalTitle: (originalTitle || pageTitle), pageTitle: pageTitle, lang: lang, director: director, type: mediaType };
   }catch(e){ return null; }
 }
 
@@ -1125,7 +1176,8 @@ document.getElementById("proposeModalSubmit").addEventListener("click", async fu
         originalTitle: (proposeSearchResult && proposeSearchResult.originalTitle) || "",
         description: (proposeSearchResult && proposeSearchResult.description) || "",
         poster: (proposeSearchResult && proposeSearchResult.poster) || "",
-        director: (proposeSearchResult && proposeSearchResult.director) || ""
+        director: (proposeSearchResult && proposeSearchResult.director) || "",
+        mediaType: (proposeSearchResult && proposeSearchResult.type) || ""
       })
     });
     const data = await res.json();
@@ -1140,6 +1192,76 @@ document.getElementById("proposeModalSubmit").addEventListener("click", async fu
     btn.textContent = "Надіслати";
   }
 });
+
+let lastApprovedItems = [];
+let isAdmin = !!localStorage.getItem("adminKey");
+
+function parseApprovedIssues(issues){
+  return issues.filter(function(i){ return !i.pull_request && i.state==="open" && i.title.indexOf("[Схвалено]")===0; }).map(function(issue){
+    const title = issue.title.replace("[Схвалено]","").trim();
+    const parsed = parseProposeBody(issue.body);
+    return {
+      t: title, y: parsed.year || "", type: parsed.type || "фільм", rating: 0,
+      cat: "Від тредчана", cast: "", syn: parsed.description || parsed.comment || "",
+      d: parsed.director || "", poster: parsed.poster || "", mood: null,
+      approvedIssueNumber: issue.number
+    };
+  });
+}
+
+function updateAdminToggleUI(){
+  const btn = document.getElementById("adminToggle");
+  if(!btn) return;
+  btn.textContent = isAdmin ? "⚙ адмін" : "⚙";
+  btn.classList.toggle("active", isAdmin);
+}
+const adminToggleBtn = document.getElementById("adminToggle");
+if(adminToggleBtn){
+  adminToggleBtn.addEventListener("click", function(){
+    if(isAdmin){
+      if(confirm("Вийти з адмін-режиму?")){
+        localStorage.removeItem("adminKey"); isAdmin = false; updateAdminToggleUI(); init();
+      }
+    } else {
+      const code = prompt("Введи адмін-код:");
+      if(code){ localStorage.setItem("adminKey", code.trim()); isAdmin = true; updateAdminToggleUI(); init(); }
+    }
+  });
+}
+updateAdminToggleUI();
+
+async function adminAction(payload){
+  const key = localStorage.getItem("adminKey") || "";
+  try{
+    const res = await fetch(RATE_WORKER_URL, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(Object.assign({}, payload, { adminKey: key }))
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
+    return true;
+  }catch(e){ alert("Не вдалося виконати дію: " + e.message); return false; }
+}
+async function approveProposal(number, title){
+  if(!confirm('Додати "'+title+'" в основний рейтинг?')) return;
+  const ok = await adminAction({ type: "approve", number: number, title: title });
+  if(ok) init();
+}
+async function rejectProposal(number, title){
+  if(!confirm('Відхилити пропозицію "'+title+'"?')) return;
+  const ok = await adminAction({ type: "closeIssue", number: number });
+  if(ok) init();
+}
+async function deleteRatingEntry(number){
+  if(!confirm("Видалити цю оцінку/коментар?")) return;
+  const ok = await adminAction({ type: "closeIssue", number: number });
+  if(ok) init();
+}
+async function deleteReplyEntry(commentId){
+  if(!confirm("Видалити цю відповідь?")) return;
+  const ok = await adminAction({ type: "deleteComment", commentId: commentId });
+  if(ok) init();
+}
 
 async function init(){
   let issues = [];
@@ -1157,6 +1279,7 @@ async function init(){
   attachReplies(ratingsMap, comments);
   lastLikesMap = parseLikeIssues(issues);
   lastSeenMap = parseSeenIssues(issues);
+  lastApprovedItems = parseApprovedIssues(issues);
   renderOfficial(ratingsMap);
   renderCommunity(issues, ok);
 }
