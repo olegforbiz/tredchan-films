@@ -51,13 +51,18 @@ export default {
     if (type === "rate") {
       const title = (data.title || "").toString().trim().slice(0, 200);
       const name = ((data.name || "").toString().trim() || "Тредчан").slice(0, 60);
-      const rating = (data.rating || "").toString().trim().slice(0, 10);
+      const ratingRaw = (data.rating || "").toString().trim().slice(0, 10);
       const comment = (data.comment || "").toString().trim().slice(0, 2000);
 
       if (!title) return jsonResponse({ error: "Title is required" }, 400);
 
+      const ratingNum = parseFloat(ratingRaw);
+      if (!ratingRaw || isNaN(ratingNum) || ratingNum < 1 || ratingNum > 10) {
+        return jsonResponse({ error: "Rating must be between 1 and 10" }, 400);
+      }
+
       const issueTitle = "[Оцінка] " + title;
-      const issueBody = "Ім'я: " + name + "\n\nОцінка (1-10): " + rating + "\n\nКоментар: " + comment;
+      const issueBody = "Ім'я: " + name + "\n\nОцінка (1-10): " + ratingNum + "\n\nКоментар: " + comment;
 
       const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues", {
         method: "POST",
@@ -80,6 +85,7 @@ export default {
       const originalTitle = (data.originalTitle || "").toString().trim().slice(0, 200);
       const description = (data.description || "").toString().trim().slice(0, 1000);
       const poster = (data.poster || "").toString().trim().slice(0, 500);
+      const director = (data.director || "").toString().trim().slice(0, 100);
 
       if (!title) return jsonResponse({ error: "Title is required" }, 400);
 
@@ -87,6 +93,7 @@ export default {
       let issueBody = "Ім'я: " + name + "\n";
       if (originalTitle && originalTitle !== title) issueBody += "Оригінальна назва: " + originalTitle + "\n";
       if (year) issueBody += "Рік: " + year + "\n";
+      if (director) issueBody += "Режисер: " + director + "\n";
       if (poster) issueBody += "Постер: " + poster + "\n";
       issueBody += "\n";
       if (description) issueBody += "Опис: " + description + "\n\n";
