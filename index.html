@@ -61,7 +61,7 @@ a{color:inherit;}
 .reply-list{margin:0 0 4px 14px;border-left:2px solid var(--border);padding-left:10px;}
 .reply-item{font-size:12px;color:var(--text2);margin:0 0 4px;line-height:1.4;}
 .reply-toggle{background:none;border:none;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;padding:0;margin-left:0;}
-.reply-toggle:hover{color:var(--text);text-decoration:underline;}
+.reply-toggle:hover{color:var(--text);text-decoration:underline;}.show-replies-toggle{background:none;border:none;color:var(--gold);font-size:12px;cursor:pointer;font-family:inherit;padding:0;margin:0 0 4px;display:block;}.show-replies-toggle:hover{text-decoration:underline;}
 .reply-form{margin:8px 0 0 14px;max-width:320px;}
 .reply-form .modal-input,.reply-form .modal-textarea{margin-bottom:6px;font-size:13px;}
 .reply-form .modal-textarea{min-height:50px;}
@@ -435,6 +435,9 @@ async function handleReplySubmit(issueNumber, formEl, listEl){
     rp.appendChild(rspan);
     rp.appendChild(document.createTextNode(" "+text));
     listEl.appendChild(rp);
+    listEl.style.display = "block";
+    const toggleBtn = listEl.parentElement ? listEl.parentElement.querySelector(".show-replies-toggle") : null;
+    if(toggleBtn){ toggleBtn.style.display = ""; toggleBtn.textContent = "Сховати відповіді"; }
     textInput.value = "";
     formEl.style.display = "none";
     const countEl = formEl.closest(".post").querySelector(".icon-static .icon-count");
@@ -503,6 +506,7 @@ function buildSeedPost(item, ratings, likes){
 
       const replyList = document.createElement("div");
       replyList.className = "reply-list";
+      replyList.style.display = "none";
       (r.replies||[]).forEach(rep=>{
         const rp = document.createElement("div");
         rp.className = "reply-item";
@@ -513,6 +517,23 @@ function buildSeedPost(item, ratings, likes){
         rp.appendChild(document.createTextNode(" "+rep.text));
         replyList.appendChild(rp);
       });
+
+      const showRepliesToggle = document.createElement("button");
+      showRepliesToggle.type = "button";
+      showRepliesToggle.className = "show-replies-toggle";
+      function updateShowRepliesLabel(){
+        const n = replyList.children.length;
+        if(n === 0){ showRepliesToggle.style.display = "none"; return; }
+        showRepliesToggle.style.display = "";
+        const expanded = replyList.style.display !== "none";
+        showRepliesToggle.textContent = expanded ? "Сховати відповіді" : ("Показати "+n+(n===1?" відповідь":(n<5?" відповіді":" відповідей")));
+      }
+      updateShowRepliesLabel();
+      showRepliesToggle.addEventListener("click", function(){
+        replyList.style.display = replyList.style.display === "none" ? "block" : "none";
+        updateShowRepliesLabel();
+      });
+      c.appendChild(showRepliesToggle);
       c.appendChild(replyList);
 
       const replyToggle = document.createElement("button");
