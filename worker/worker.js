@@ -50,13 +50,14 @@ export default {
 
     if (type === "rate") {
       const title = (data.title || "").toString().trim().slice(0, 200);
+      const name = ((data.name || "").toString().trim() || "Тредчан").slice(0, 60);
       const rating = (data.rating || "").toString().trim().slice(0, 10);
       const comment = (data.comment || "").toString().trim().slice(0, 2000);
 
       if (!title) return jsonResponse({ error: "Title is required" }, 400);
 
       const issueTitle = "[Оцінка] " + title;
-      const issueBody = "Оцінка (1-10): " + rating + "\n\nКоментар: " + comment;
+      const issueBody = "Ім'я: " + name + "\n\nОцінка (1-10): " + rating + "\n\nКоментар: " + comment;
 
       const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues", {
         method: "POST",
@@ -115,6 +116,28 @@ export default {
         return jsonResponse({ error: "GitHub API error", details: errText }, 502);
       }
       return jsonResponse({ success: true }, 200);
+    }
+
+    if (type === "reply") {
+      const issueNumber = parseInt(data.issueNumber, 10);
+      const name = ((data.name || "").toString().trim() || "Тредчан").slice(0, 60);
+      const text = (data.text || "").toString().trim().slice(0, 2000);
+
+      if (!issueNumber || issueNumber < 1) return jsonResponse({ error: "Valid issueNumber is required" }, 400);
+      if (!text) return jsonResponse({ error: "Text is required" }, 400);
+
+      const commentBody = "Ім'я: " + name + "\n\n" + text;
+      const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues/" + issueNumber + "/comments", {
+        method: "POST",
+        headers: ghHeaders,
+        body: JSON.stringify({ body: commentBody }),
+      });
+      if (!ghRes.ok) {
+        const errText = await ghRes.text();
+        return jsonResponse({ error: "GitHub API error", details: errText }, 502);
+      }
+      const ghData = await ghRes.json();
+      return jsonResponse({ success: true, id: ghData.id }, 200);
     }
 
     return jsonResponse({ error: "Unknown type" }, 400);
