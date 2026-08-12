@@ -42,6 +42,13 @@ a{color:inherit;}
 .movie-cast{font-size:11px;color:var(--text2);margin-top:2px;}
 .actions{display:flex;gap:22px;margin-top:10px;color:var(--text2);}
 .actions svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;display:block;}
+.icon-btn{display:flex;align-items:center;gap:5px;background:none;border:none;color:var(--text2);cursor:pointer;font-family:inherit;padding:0;font-size:12px;}
+.icon-btn.icon-static{cursor:default;}
+.icon-count{font-size:12px;line-height:1;}
+.like-btn:hover:not(:disabled){color:#f43f5e;}
+.like-btn.liked{color:#f43f5e;}
+.like-btn.liked svg{fill:#f43f5e;stroke:#f43f5e;}
+.like-btn:disabled{opacity:.6;cursor:default;}
 .watch-links{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
 .watch-links a,.rate-link{font-size:12px;border:1px solid var(--border);border-radius:14px;padding:4px 10px;color:var(--text2);text-decoration:none;}
 .watch-links a:hover,.rate-link:hover{border-color:#444;color:var(--text);}
@@ -283,13 +290,79 @@ function parseRatingIssues(issues){
   return map;
 }
 
-function buildSeedPost(item, ratings){
+function parseLikeIssues(issues){
+  const map = {};
+  issues.forEach(issue=>{
+    if(issue.pull_request) return;
+    if(issue.title.indexOf("[Лайк]")!==0) return;
+    const movieTitle = issue.title.replace("[Лайк]","").trim();
+    if(!map[movieTitle]) map[movieTitle] = [];
+    map[movieTitle].push({ number: issue.number, state: issue.state });
+  });
+  return map;
+}
+function getMyLikeNumber(title){
+  try{
+    const v = localStorage.getItem("like:"+title);
+    return v ? parseInt(v,10) : null;
+  }catch(e){ return null; }
+}
+function setMyLikeNumber(title, num){
+  try{
+    if(num===null) localStorage.removeItem("like:"+title);
+    else localStorage.setItem("like:"+title, String(num));
+  }catch(e){}
+}
+async function handleLikeClick(title, btn){
+  if(btn.dataset.busy === "1") return;
+  btn.dataset.busy = "1";
+  btn.disabled = true;
+  const countEl = btn.querySelector(".icon-count");
+  const myNum = getMyLikeNumber(title);
+  try{
+    if(myNum){
+      const res = await fetch(RATE_WORKER_URL, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ type: "unlike", title: title, issueNumber: myNum })
+      });
+      const data = await res.json();
+      if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
+      setMyLikeNumber(title, null);
+      btn.classList.remove("liked");
+      if(countEl) countEl.textContent = Math.max(0, (parseInt(countEl.textContent,10)||1) - 1);
+    } else {
+      const res = await fetch(RATE_WORKER_URL, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ type: "like", title: title })
+      });
+      const data = await res.json();
+      if(!res.ok || !data.success) throw new Error((data && data.error) || "Помилка");
+      setMyLikeNumber(title, data.issueNumber);
+      btn.classList.add("liked");
+      if(countEl) countEl.textContent = (parseInt(countEl.textContent,10)||0) + 1;
+    }
+  }catch(err){
+    console.error("like error", err);
+  }finally{
+    btn.dataset.busy = "0";
+    btn.disabled = false;
+  }
+}
+
+function buildSeedPost(item, ratings, likes){
   const post = document.createElement("div");
   post.className = "post";
   const initials = item.type === "серіал" ? "СЕ" : "ФІ";
   const rated = (ratings||[]).filter(r=>r.rating!=null);
   const avgCommunity = rated.length ? (rated.reduce((s,r)=>s+r.rating,0)/rated.length) : null;
   const communityLine = avgCommunity ? ' <span class="community-rating">· тредчани '+avgCommunity.toFixed(1)+' ('+rated.length+')</span>' : '';
+  const withText = (ratings||[]).filter(r=>r.comment);
+  const likeList = likes || [];
+  const likeCount = likeList.filter(l=>l.state==="open").length;
+  const myLikeNum = getMyLikeNumber(item.t);
+  const isLikedByMe = myLikeNum!==null && likeList.some(l=>l.number===myLikeNum && l.state==="open");
   post.innerHTML =
     '<div class="avatar">OF</div>' +
     '<div class="post-main">' +
@@ -305,13 +378,18 @@ function buildSeedPost(item, ratings){
       '</a>' +
       watchLinksHtml(item.t) +
       '<div class="comments" data-comments></div>' +
-      '<div class="actions">'+iconHeart()+iconComment()+'<button type="button" class="rate-link rate-btn" data-title="'+escapeAttr(item.t)+'">Оцінити / прокоментувати</button></div>' +
+      '<div class="actions">' +
+      '<button type="button" class="icon-btn like-btn'+(isLikedByMe?' liked':'')+'" data-title="'+escapeAttr(item.t)+'">'+iconHeart()+'<span class="icon-count">'+likeCount+'</span></button>' +
+      '<span class="icon-btn icon-static">'+iconComment()+'<span class="icon-count">'+withText.length+'</span></span>' +
+      '<button type="button" class="rate-link rate-btn" data-title="'+escapeAttr(item.t)+'">Оцінити / прокоментувати</button>' +
+    '</div>' +
     '</div>';
   const rateBtn = post.querySelector(".rate-btn");
   if(rateBtn){ rateBtn.addEventListener("click", function(){ openRateModal(item.t); }); }
+  const likeBtn = post.querySelector(".like-btn");
+  if(likeBtn){ likeBtn.addEventListener("click", function(){ handleLikeClick(item.t, likeBtn); }); }
   const commentsWrap = post.querySelector("[data-comments]");
-  const withText = (ratings||[]).filter(r=>r.comment);
-  if(withText.length){
+    if(withText.length){
     withText.forEach(r=>{
       const p = document.createElement("p");
       p.className = "comment";
@@ -372,14 +450,17 @@ async function hydratePosters(root){
 }
 
 let lastRatingsMap = {};
+let lastLikesMap = {};
 let typeFilter = "all";
+let moodFilter = null;
 
 function renderOfficial(ratingsMap){
   lastRatingsMap = ratingsMap;
   const el = document.getElementById("feed-official");
   el.innerHTML = "";
   const typeValues = ["фільм","серіал"];
-  const source = typeFilter==="all" ? SEED : (typeValues.indexOf(typeFilter)!==-1 ? SEED.filter(item=>item.type===typeFilter) : SEED.filter(item=>item.mood===typeFilter));
+  let source = typeFilter === "all" ? SEED : SEED.filter(item=>item.type===typeFilter);
+  if(moodFilter) source = source.filter(item=>item.mood===moodFilter);
   const scored = source.map(item=>{
     const ratings = ratingsMap[item.t] || [];
     const rated = ratings.filter(r=>r.rating!=null);
@@ -392,7 +473,7 @@ function renderOfficial(ratingsMap){
     el.innerHTML = '<p class="empty-state">Нічого не знайдено для цього фільтра.</p>';
     return;
   }
-  scored.forEach(s=>el.appendChild(buildSeedPost(s.item, s.ratings)));
+  scored.forEach(s=>el.appendChild(buildSeedPost(s.item, s.ratings, lastLikesMap[s.item.t] || [])));
   hydratePosters(el);
 }
 
@@ -426,11 +507,28 @@ document.querySelectorAll(".tab").forEach(btn=>{
   });
 });
 
+const TYPE_VALUES = ["all","фільм","серіал"];
 document.querySelectorAll(".type-filter button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
-    document.querySelectorAll(".type-filter button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    typeFilter = btn.dataset.filter;
+    const val = btn.dataset.filter;
+    if(TYPE_VALUES.indexOf(val) !== -1){
+      document.querySelectorAll(".type-filter button").forEach(b=>{
+        if(TYPE_VALUES.indexOf(b.dataset.filter) !== -1) b.classList.remove("active");
+      });
+      btn.classList.add("active");
+      typeFilter = val;
+    } else {
+      if(moodFilter === val){
+        moodFilter = null;
+        btn.classList.remove("active");
+      } else {
+        document.querySelectorAll(".type-filter button").forEach(b=>{
+          if(TYPE_VALUES.indexOf(b.dataset.filter) === -1) b.classList.remove("active");
+        });
+        moodFilter = val;
+        btn.classList.add("active");
+      }
+    }
     renderOfficial(lastRatingsMap);
   });
 });
@@ -448,6 +546,7 @@ async function init(){
     if(res.ok){ issues = await res.json(); ok = true; }
   }catch(e){}
   const ratingsMap = parseRatingIssues(issues);
+  lastLikesMap = parseLikeIssues(issues);
   renderOfficial(ratingsMap);
   renderCommunity(issues, ok);
 }
