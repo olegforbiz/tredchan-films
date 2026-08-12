@@ -757,6 +757,7 @@ function parseProposeBody(body){
   const directorM = body.match(/Режисер:\s*([^\n]*)/);
   const posterM = body.match(/Постер:\s*([^\n]*)/);
   const typeM = body.match(/Тип:\s*([^\n]*)/);
+  const imdbM = body.match(/Рейтинг IMDb:\s*([^\n]*)/);
   const descM = body.match(/Опис:\s*([\s\S]*?)\n\nКоментар тредчана:/);
   const commentM = body.match(/Коментар тредчана:\s*([\s\S]*)/);
   return {
@@ -765,6 +766,7 @@ function parseProposeBody(body){
     director: directorM ? directorM[1].trim() : "",
     poster: posterM ? posterM[1].trim() : "",
     type: typeM ? typeM[1].trim() : "",
+    imdbRating: imdbM ? parseFloat(imdbM[1].trim()) : null,
     description: descM ? descM[1].trim() : "",
     comment: commentM ? commentM[1].trim() : body
   };
@@ -780,6 +782,7 @@ function buildCommunityPost(issue, title){
   const metaBits = [];
   if(parsed.year) metaBits.push(parsed.year);
   if(parsed.director) metaBits.push("Режисер: "+parsed.director);
+  if(parsed.imdbRating) metaBits.push("IMDb "+parsed.imdbRating.toFixed(1));
   metaBits.push("пропозиція тредчана");
   const posterInner = parsed.poster ? "" : "ФІ";
   const posterAttr = parsed.poster ? "" : ' data-title="'+escapeAttr(title)+'"';
@@ -1210,7 +1213,7 @@ function parseApprovedIssues(issues){
     const title = issue.title.replace("[Схвалено]","").trim();
     const parsed = parseProposeBody(issue.body);
     return {
-      t: title, y: parsed.year || "", type: parsed.type || "фільм", rating: 0,
+      t: title, y: parsed.year || "", type: parsed.type || "фільм", rating: parsed.imdbRating || 0,
       cat: "Від тредчана", cast: "", syn: truncateSyn(parsed.description || parsed.comment || "", 220),
       d: parsed.director || "", poster: parsed.poster || "", mood: null,
       approvedIssueNumber: issue.number
