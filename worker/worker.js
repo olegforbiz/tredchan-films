@@ -240,6 +240,21 @@ export default {
         const number = parseInt(data.number, 10);
         const approveTitle = (data.title || "").toString().trim().slice(0, 200);
         if (!number || !approveTitle) return jsonResponse({ error: "Number and title are required" }, 400);
+
+        let proposerName = "Тредчан";
+        let proposerComment = "";
+        const origRes = await fetch("https://api.github.com/repos/" + REPO + "/issues/" + number, {
+          headers: ghHeaders,
+        });
+        if (origRes.ok) {
+          const origData = await origRes.json();
+          const origBody = origData.body || "";
+          const nameMatch = origBody.match(/Ім\'я:\s*([^\n]*)/i);
+          if (nameMatch && nameMatch[1].trim()) proposerName = nameMatch[1].trim();
+          const commentMatch = origBody.match(/Коментар тредчана:\s*([\s\S]*)/i);
+          if (commentMatch) proposerComment = commentMatch[1].trim();
+        }
+
         const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues/" + number, {
           method: "PATCH",
           headers: ghHeaders,
@@ -249,6 +264,16 @@ export default {
           const errText = await ghRes.text();
           return jsonResponse({ error: "GitHub API error", details: errText }, 502);
         }
+
+        if (proposerComment) {
+          const commentIssueBody = "Ім\'я: " + proposerName + "\n\nКоментар: " + proposerComment;
+          await fetch("https://api.github.com/repos/" + REPO + "/issues", {
+            method: "POST",
+            headers: ghHeaders,
+            body: JSON.stringify({ title: "[Оцінка] " + approveTitle, body: commentIssueBody }),
+          });
+        }
+
         return jsonResponse({ success: true }, 200);
       }
 
