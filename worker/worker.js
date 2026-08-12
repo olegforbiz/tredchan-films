@@ -72,6 +72,29 @@ export default {
       return jsonResponse({ success: true, url: ghData.html_url, issueNumber: ghData.number }, 200);
     }
 
+    if (type === "propose") {
+      const title = (data.title || "").toString().trim().slice(0, 200);
+      const name = ((data.name || "").toString().trim() || "Тредчан").slice(0, 60);
+      const comment = (data.comment || "").toString().trim().slice(0, 2000);
+
+      if (!title) return jsonResponse({ error: "Title is required" }, 400);
+
+      const issueTitle = "[Фільм] " + title;
+      const issueBody = "Ім'я: " + name + "\n\n" + comment;
+
+      const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues", {
+        method: "POST",
+        headers: ghHeaders,
+        body: JSON.stringify({ title: issueTitle, body: issueBody }),
+      });
+      if (!ghRes.ok) {
+        const errText = await ghRes.text();
+        return jsonResponse({ error: "GitHub API error", details: errText }, 502);
+      }
+      const ghData = await ghRes.json();
+      return jsonResponse({ success: true, url: ghData.html_url, issueNumber: ghData.number }, 200);
+    }
+
     if (type === "like") {
       const title = (data.title || "").toString().trim().slice(0, 200);
       if (!title) return jsonResponse({ error: "Title is required" }, 400);
