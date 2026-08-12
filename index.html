@@ -33,14 +33,12 @@ a{color:inherit;}
 .handle{font-weight:600;font-size:14px;}
 .meta{color:var(--text2);font-size:12px;}
 .tag{font-size:10px;background:#1c1c1c;color:#9a9a9a;padding:2px 8px;border-radius:10px;margin-left:auto;white-space:nowrap;}
-.tag-featured{font-size:30px;background:#1c1c1c;color:var(--gold);padding:6px 24px;border-radius:30px;margin-left:0;flex-basis:100%;margin-top:6px;font-weight:700;white-space:nowrap;width:fit-content;}
 .post-body{margin:4px 0 8px;font-size:14px;line-height:1.45;color:var(--text2);white-space:pre-wrap;overflow-wrap:anywhere;}
 .movie-card{display:flex;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:8px;margin-top:2px;text-decoration:none;}
-.poster{width:52px;height:76px;border-radius:6px;background:#1c1c1c;flex-shrink:0;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:10px;color:#555;}
+.poster{width:156px;height:228px;border-radius:6px;background:#1c1c1c;flex-shrink:0;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:16px;color:#555;}
 .movie-info{flex:1;min-width:0;}
 .movie-title{font-weight:600;font-size:14px;margin:0;color:var(--text);}
 .movie-rating{font-size:12px;color:var(--gold);margin-top:3px;}
-.movie-rating svg{width:11px;height:11px;vertical-align:-1px;fill:currentColor;margin-right:2px;}
 .movie-cast{font-size:11px;color:var(--text2);margin-top:2px;}
 .actions{display:flex;gap:22px;margin-top:10px;color:var(--text2);}
 .actions svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;display:block;}
@@ -173,7 +171,6 @@ async function fetchPosterByTitle(title){
 
 function iconHeart(){return '<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';}
 function iconComment(){return '<svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.3 0-2.5-.3-3.6-.8L3 21l1.8-5.9A8.5 8.5 0 1 1 21 11.5z"/></svg>';}
-function iconStar(){return '<svg viewBox="0 0 24 24" stroke="none"><path d="M12 2l2.9 6.9 7.5.6-5.7 4.9 1.7 7.3L12 17.9 5.6 21.7l1.7-7.3-5.7-4.9 7.5-.6z"/></svg>';}
 
 function watchLinksHtml(title){
   const q = encodeURIComponent(title);
@@ -220,17 +217,15 @@ function buildSeedPost(item, ratings){
   const rated = (ratings||[]).filter(r=>r.rating!=null);
   const avgCommunity = rated.length ? (rated.reduce((s,r)=>s+r.rating,0)/rated.length) : null;
   const communityLine = avgCommunity ? ' <span class="community-rating">· тредчани '+avgCommunity.toFixed(1)+' ('+rated.length+')</span>' : '';
-  const isFeatured = item.cat === "Рекомендація";
-  const tagHtml = isFeatured ? '<span class="tag tag-featured">Топ 3 кіно</span>' : '<span class="tag">'+item.cat+'</span>';
   post.innerHTML =
     '<div class="avatar">OF</div>' +
     '<div class="post-main">' +
-      '<div class="post-head"><span class="handle">@olegforbiz</span><span class="meta">оригінальний перелік</span>'+tagHtml+'</div>' +
+      '<div class="post-head"><span class="handle">@olegforbiz</span><span class="meta">оригінальний перелік</span><span class="tag">'+item.cat+'</span></div>' +
       '<a class="movie-card" href="https://en.wikipedia.org/wiki/'+item.wiki+'" target="_blank" rel="noopener">' +
         '<div class="poster" data-wiki="'+item.wiki+'" data-title="'+escapeAttr(item.t)+'">'+initials+'</div>' +
         '<div class="movie-info">' +
           '<p class="movie-title">'+item.t+' ('+item.y+')</p>' +
-          '<p class="movie-rating">'+iconStar()+' '+item.rating.toFixed(1)+' · '+item.type+communityLine+'</p>' +
+          '<p class="movie-rating">★ '+item.rating.toFixed(1)+' · '+item.type+communityLine+'</p>' +
           '<p class="movie-cast">'+item.cast+'</p>' +
         '</div>' +
       '</a>' +
