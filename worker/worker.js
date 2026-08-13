@@ -256,6 +256,7 @@ export default {
       const originalTitle = (data.originalTitle || "").toString().trim().slice(0, 200);
       const poster = (data.poster || "").toString().trim().slice(0, 500);
       const mediaType = (data.mediaType || "").toString().trim().slice(0, 20);
+      const description = (data.description || "").toString().trim().slice(0, 1000);
 
       if (!title) return jsonResponse({ error: "Title is required" }, 400);
 
@@ -285,7 +286,9 @@ export default {
       if (imdbRating) issueBody += "Рейтинг IMDb: " + imdbRating + "\n";
       if (genres) issueBody += "Жанри: " + genres + "\n";
       if (poster) issueBody += "Постер: " + poster + "\n";
-      issueBody += "\nКоментар тредчана: " + comment;
+      issueBody += "\n";
+      if (description) issueBody += "Опис: " + description + "\n\n";
+      issueBody += "Коментар тредчана: " + comment;
 
       const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues", {
         method: "POST",
