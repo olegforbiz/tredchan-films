@@ -1440,11 +1440,11 @@ function openOnbModal(){
   document.getElementById("onbHint").textContent = "";
   renderOnbPreview(null);
   updateOnbUI();
-  if(ov) ov.classList.add("active");
+  if(ov) ov.style.display = "flex";
 }
 function closeOnbModal(){
   const ov = document.getElementById("onbModalOverlay");
-  if(ov) ov.classList.remove("active");
+  if(ov) ov.style.display = "none";
 }
 
 const pickBtnEl = document.getElementById("pickBtn");
