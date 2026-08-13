@@ -805,14 +805,18 @@ function buildSeedPost(item, ratings, likes, seenEntries){
   } else {
     commentsWrap.remove();
   }
-  if(isAdmin && item.approvedIssueNumber){
+  if(isAdmin){
     const delDiv = document.createElement("div");
     delDiv.className = "admin-actions";
     const delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.className = "admin-btn reject-btn";
     delBtn.textContent = "Видалити з рейтингу";
-    delBtn.addEventListener("click", function(){ deleteApprovedItem(item.approvedIssueNumber, item.t); });
+    if(item.approvedIssueNumber){
+      delBtn.addEventListener("click", function(){ deleteApprovedItem(item.approvedIssueNumber, item.t); });
+    } else {
+      delBtn.addEventListener("click", function(){ hideSeedItem(item.t); });
+    }
     delDiv.appendChild(delBtn);
     post.querySelector(".post-main").appendChild(delDiv);
   }
@@ -941,7 +945,7 @@ function renderOfficial(ratingsMap){
   const el = document.getElementById("feed-official");
   el.innerHTML = "";
   const typeValues = ["фільм","серіал"];
-  const allSource = SEED.concat(lastApprovedItems);
+  const allSource = SEED.concat(lastApprovedItems).filter(function(item){ return !hiddenTitleSet.has(normTitle(item.t)); });
   let source = typeFilter === "all" ? allSource : allSource.filter(item=>item.type===typeFilter);
   if(moodFilter) source = source.filter(item=>item.mood===moodFilter);
   const scored = source.map(item=>{
@@ -1348,6 +1352,7 @@ document.getElementById("proposeModalSubmit").addEventListener("click", async fu
 });
 
 let lastApprovedItems = [];
+let hiddenTitleSet = new Set();
 let knownTitleSet = new Set();
 let isAdmin = !!localStorage.getItem("adminKey");
 
@@ -1459,6 +1464,11 @@ async function deleteReplyEntry(commentId){
 async function deleteApprovedItem(number, title){
   if(!confirm('Видалити "'+title+'" з рейтингу?')) return;
   const ok = await adminAction({ type: "closeIssue", number: number });
+  if(ok) init();
+}
+async function hideSeedItem(title){
+  if(!confirm('Видалити "'+title+'" з рейтингу?')) return;
+  const ok = await adminAction({ type: "hide", title: title });
   if(ok) init();
 }
 
@@ -1674,6 +1684,10 @@ async function init(){
   lastLikesMap = parseLikeIssues(issues);
   lastSeenMap = parseSeenIssues(issues);
   lastApprovedItems = parseApprovedIssues(issues);
+  hiddenTitleSet = new Set();
+  issues.filter(function(i){ return !i.pull_request && i.state === "open" && i.title.indexOf("[Приховано]") === 0; }).forEach(function(i){
+    hiddenTitleSet.add(normTitle(i.title.replace("[Приховано]","").trim()));
+  });
   knownTitleSet = new Set();
   SEED.forEach(function(item){ knownTitleSet.add(normTitle(item.t)); });
   lastApprovedItems.forEach(function(item){ knownTitleSet.add(normTitle(item.t)); });
