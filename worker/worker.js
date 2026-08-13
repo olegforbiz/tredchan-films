@@ -317,7 +317,7 @@ export default {
       return jsonResponse({ success: true, issueNumber: ghData.number, genres: genres, imdbRating: imdbRating }, 200);
     }
 
-    if (type === "approve" || type === "closeIssue" || type === "deleteComment") {
+    if (type === "approve" || type === "closeIssue" || type === "deleteComment" || type === "hide") {
       if (!env.ADMIN_KEY || data.adminKey !== env.ADMIN_KEY) {
         return jsonResponse({ error: "Unauthorized" }, 403);
       }
@@ -401,6 +401,21 @@ export default {
           headers: ghHeaders,
         });
         if (!ghRes.ok && ghRes.status !== 404) {
+          const errText = await ghRes.text();
+          return jsonResponse({ error: "GitHub API error", details: errText }, 502);
+        }
+        return jsonResponse({ success: true }, 200);
+      }
+
+      if (type === "hide") {
+        const hideTitle = (data.title || "").toString().trim().slice(0, 200);
+        if (!hideTitle) return jsonResponse({ error: "Title is required" }, 400);
+        const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues", {
+          method: "POST",
+          headers: ghHeaders,
+          body: JSON.stringify({ title: "[Приховано] " + hideTitle, body: "Приховано з рейтингу." }),
+        });
+        if (!ghRes.ok) {
           const errText = await ghRes.text();
           return jsonResponse({ error: "GitHub API error", details: errText }, 502);
         }
