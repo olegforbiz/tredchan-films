@@ -248,6 +248,58 @@ export default {
     }
 
 
+    if (type === "taste") {
+      const title = (data.title || "").toString().trim().slice(0, 200);
+      const name = ((data.name || "").toString().trim() || "Тредчан").slice(0, 60);
+      const comment = (data.comment || "").toString().trim().slice(0, 1000);
+      const year = (data.year || "").toString().trim().slice(0, 10);
+      const originalTitle = (data.originalTitle || "").toString().trim().slice(0, 200);
+      const poster = (data.poster || "").toString().trim().slice(0, 500);
+      const mediaType = (data.mediaType || "").toString().trim().slice(0, 20);
+
+      if (!title) return jsonResponse({ error: "Title is required" }, 400);
+
+      let imdbRating = "";
+      let genres = "";
+      if (env.OMDB_API_KEY) {
+        try {
+          const omdbTitle = originalTitle || title;
+          let omdbUrl = "https://www.omdbapi.com/?apikey=" + env.OMDB_API_KEY + "&t=" + encodeURIComponent(omdbTitle);
+          if (year) omdbUrl += "&y=" + encodeURIComponent(year);
+          const omdbRes = await fetch(omdbUrl);
+          if (omdbRes.ok) {
+            const omdbData = await omdbRes.json();
+            if (omdbData.Response === "True") {
+              if (omdbData.imdbRating && omdbData.imdbRating !== "N/A") imdbRating = omdbData.imdbRating;
+              if (omdbData.Genre && omdbData.Genre !== "N/A") genres = omdbData.Genre;
+            }
+          }
+        } catch (e) {}
+      }
+
+      const issueTitle = "[Смак] " + title;
+      let issueBody = "Ім'я: " + name + "\n";
+      if (originalTitle && originalTitle !== title) issueBody += "Оригінальна назва: " + originalTitle + "\n";
+      if (year) issueBody += "Рік: " + year + "\n";
+      if (mediaType) issueBody += "Тип: " + mediaType + "\n";
+      if (imdbRating) issueBody += "Рейтинг IMDb: " + imdbRating + "\n";
+      if (genres) issueBody += "Жанри: " + genres + "\n";
+      if (poster) issueBody += "Постер: " + poster + "\n";
+      issueBody += "\nКоментар тредчана: " + comment;
+
+      const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues", {
+        method: "POST",
+        headers: ghHeaders,
+        body: JSON.stringify({ title: issueTitle, body: issueBody }),
+      });
+      if (!ghRes.ok) {
+        const errText = await ghRes.text();
+        return jsonResponse({ error: "GitHub API error", details: errText }, 502);
+      }
+      const ghData = await ghRes.json();
+      return jsonResponse({ success: true, issueNumber: ghData.number, genres: genres, imdbRating: imdbRating }, 200);
+    }
+
     if (type === "approve" || type === "closeIssue" || type === "deleteComment") {
       if (!env.ADMIN_KEY || data.adminKey !== env.ADMIN_KEY) {
         return jsonResponse({ error: "Unauthorized" }, 403);
@@ -297,7 +349,7 @@ export default {
       if (type === "closeIssue") {
         const number = parseInt(data.number, 10);
         if (!number) return jsonResponse({ error: "Number is required" }, 400);
-        const allowedPrefixes = ["[Оцінка]", "[Лайк]", "[Фільм]", "[Переглянуто]", "[Схвалено]"];
+        const allowedPrefixes = ["[Оцінка]", "[Лайк]", "[Фільм]", "[Переглянуто]", "[Схвалено]", "[Смак]"];
         const getRes = await fetch("https://api.github.com/repos/" + REPO + "/issues/" + number, {
           headers: ghHeaders,
         });
