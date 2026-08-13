@@ -1275,6 +1275,15 @@ document.getElementById("proposeModalTitle").addEventListener("input", function(
     const info = await searchMovieInfo(title);
     proposeSearchResult = info;
     renderProposePreview(info);
+    const dupHint = document.getElementById("proposeModalHint");
+    const dupSubmitBtn = document.getElementById("proposeModalSubmit");
+    if(checkDuplicateTitle(title, info && info.originalTitle)){
+      if(dupHint){ dupHint.textContent = "Цей фільм вже є в базі — запропонуй щось інше \uD83D\uDE42"; dupHint.style.color = "#f87171"; }
+      if(dupSubmitBtn) dupSubmitBtn.disabled = true;
+    } else {
+      if(dupHint){ dupHint.textContent = ""; dupHint.style.color = ""; }
+      if(dupSubmitBtn) dupSubmitBtn.disabled = false;
+    }
   }, 700);
 });
 document.getElementById("proposeModalSubmit").addEventListener("click", async function(){
@@ -1286,6 +1295,10 @@ document.getElementById("proposeModalSubmit").addEventListener("click", async fu
   if(hint){ hint.textContent = ""; hint.style.color = ""; }
   if(!title){
     if(hint){ hint.textContent = "Вкажи назву фільму чи серіалу."; hint.style.color = "#f87171"; }
+    return;
+  }
+  if(checkDuplicateTitle(title, proposeSearchResult && proposeSearchResult.originalTitle)){
+    if(hint){ hint.textContent = "Цей фільм вже є в базі — запропонуй щось інше \uD83D\uDE42"; hint.style.color = "#f87171"; }
     return;
   }
   btn.disabled = true;
@@ -1318,8 +1331,15 @@ document.getElementById("proposeModalSubmit").addEventListener("click", async fu
 });
 
 let lastApprovedItems = [];
+let knownTitleSet = new Set();
 let isAdmin = !!localStorage.getItem("adminKey");
 
+function normTitle(s){
+  return (s || "").toLowerCase().trim().replace(/[^\p{L}\p{N}]+/gu, " ").replace(/\s+/g, " ").trim();
+}
+function checkDuplicateTitle(title, originalTitle){
+  return knownTitleSet.has(normTitle(title)) || (!!originalTitle && knownTitleSet.has(normTitle(originalTitle)));
+}
 function truncateSyn(text, maxLen){
   if(!text) return "";
   if(text.length <= maxLen) return text;
@@ -1629,6 +1649,14 @@ async function init(){
   lastLikesMap = parseLikeIssues(issues);
   lastSeenMap = parseSeenIssues(issues);
   lastApprovedItems = parseApprovedIssues(issues);
+  knownTitleSet = new Set();
+  SEED.forEach(function(item){ knownTitleSet.add(normTitle(item.t)); });
+  lastApprovedItems.forEach(function(item){ knownTitleSet.add(normTitle(item.t)); });
+  issues.filter(function(i){ return !i.pull_request && i.state === "open" && i.title.indexOf("[Фільм]") === 0; }).forEach(function(i){
+    knownTitleSet.add(normTitle(i.title.replace("[Фільм]","").trim()));
+    const p = parseProposeBody(i.body);
+    if(p.originalTitle) knownTitleSet.add(normTitle(p.originalTitle));
+  });
   renderOfficial(ratingsMap);
   renderCommunity(issues, ok);
   renderTaste(issues);
