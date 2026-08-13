@@ -1107,28 +1107,75 @@ async function fetchDirectorSurname(pageTitle, lang){
 
 async function fetchWikiMovieInfo(title, lang){
   try{
-    const searchUrl = "https://"+lang+".wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=5&srsearch="+encodeURIComponent(title);
-    const sRes = await fetch(searchUrl);
-    const sData = await sRes.json();
-    const hits = (sData.query && sData.query.search) || [];
-    if(!hits.length) return null;
-    const mediaRe = lang === "uk"
-      ? /фільм|серіал|стрічка|кінофільм|мультфільм|аніме|мультсеріал/i
-      : /\bfilm\b|\bmovie\b|tv series|television series|\banime\b/i;
-    let chosenTitle = null, chosenSum = null, fallbackTitle = null, fallbackSum = null;
-    for(const hit of hits){
-      const slug = encodeURIComponent(hit.title.replace(/ /g,"_"));
+    const FILM_QIDS = ["Q11424","Q5398426","Q24862","Q506240","Q93204","Q202866","Q1259759","Q63952888","Q1261214","Q29168811","Q20650540","Q226730","Q15416","Q24856","Q3464665","Q21191270","Q571074","Q1054574","Q336144"];
+    const queries = [title, title + (lang === "uk" ? " фільм" : " film"), title + (lang === "uk" ? " серіал" : " series")];
+    const cand = [];
+    for(const qq of queries){
       try{
-        const sumRes = await fetch("https://"+lang+".wikipedia.org/api/rest_v1/page/summary/"+slug);
-        if(!sumRes.ok) continue;
-        const sum = await sumRes.json();
-        if(!fallbackTitle){ fallbackTitle = hit.title; fallbackSum = sum; }
-        if(sum.description && mediaRe.test(sum.description)){
-          chosenTitle = hit.title; chosenSum = sum; break;
-        }
+        const sr = await fetch("https://"+lang+".wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=8&srsearch="+encodeURIComponent(qq));
+        const sd = await sr.json();
+        ((sd.query && sd.query.search) || []).forEach(function(h){ if(cand.indexOf(h.title) < 0) cand.push(h.title); });
       }catch(e){}
     }
-    if(!chosenTitle && fallbackTitle){ chosenTitle = fallbackTitle; chosenSum = fallbackSum; }
+    if(!cand.length) return null;
+    const batch = cand.slice(0, 20);
+    const qmap = {};
+    try{
+      const pr = await fetch("https://"+lang+".wikipedia.org/w/api.php?action=query&prop=pageprops&format=json&origin=*&titles="+encodeURIComponent(batch.join("|")));
+      const pd = await pr.json();
+      const pages = (pd.query && pd.query.pages) || {};
+      Object.keys(pages).forEach(function(k){
+        const p = pages[k];
+        if(p.pageprops && p.pageprops.wikibase_item) qmap[p.title] = p.pageprops.wikibase_item;
+      });
+    }catch(e){}
+    const qids = batch.map(function(t){ return qmap[t]; }).filter(Boolean);
+    if(!qids.length) return null;
+    const ents = {};
+    for(let i = 0; i < qids.length; i += 45){
+      try{
+        const er = await fetch("https://www.wikidata.org/w/api.php?action=wbgetentities&props=claims&format=json&origin=*&ids="+qids.slice(i, i+45).join("|"));
+        const ed = await er.json();
+        Object.assign(ents, ed.entities || {});
+      }catch(e){}
+    }
+    const termLc = title.trim().toLowerCase();
+    const valid = [];
+    batch.forEach(function(t, i){
+      const q = qmap[t];
+      if(!q) return;
+      const ent = ents[q];
+      if(!ent) return;
+      const c = ent.claims || {};
+      const p31 = (c.P31 || []).map(function(x){ return x.mainsnak.datavalue && x.mainsnak.datavalue.value.id; }).filter(Boolean);
+      if(p31.indexOf("Q4167410") >= 0) return;
+      const isFilm = p31.some(function(x){ return FILM_QIDS.indexOf(x) >= 0; })
+        || !!(c.P57 && c.P57.length) || !!(c.P161 && c.P161.length) || !!(c.P449 && c.P449.length);
+      if(!isFilm) return;
+      const b = t.replace(/\s*\([^)]*\)\s*$/, "").trim().toLowerCase();
+      let score = -i;
+      if(b === termLc) score += 1000;
+      else if(b.indexOf(termLc) === 0) score += 500;
+      else if(b.indexOf(termLc) >= 0) score += 200;
+      else {
+        const words = termLc.split(/\s+/).filter(function(w){ return w.length >= 4; });
+        const hit = words.some(function(w){ return b.indexOf(w) >= 0; });
+        if(!hit) return;
+        score += 50;
+      }
+      const isSeries = p31.indexOf("Q5398426") >= 0 || p31.indexOf("Q1259759") >= 0 || p31.indexOf("Q63952888") >= 0 || p31.indexOf("Q15416") >= 0 || !!(c.P449 && c.P449.length);
+      valid.push({ t: t, score: score, isSeries: isSeries });
+    });
+    if(!valid.length) return null;
+    valid.sort(function(a, b){ return b.score - a.score; });
+    const picked = valid[0];
+    let chosenTitle = picked.t, chosenSum = null;
+    try{
+      const sumRes = await fetch("https://"+lang+".wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(chosenTitle.replace(/ /g, "_")));
+      if(sumRes.ok) chosenSum = await sumRes.json();
+    }catch(e){}
+    if(!chosenSum) return null;
+    chosenSum.__isSeries = picked.isSeries;
     if(!chosenTitle) return null;
     const pageTitle = chosenTitle;
     const sum = chosenSum;
@@ -1150,9 +1197,8 @@ async function fetchWikiMovieInfo(title, lang){
       originalTitle = pageTitle;
     }
     const director = await fetchDirectorSurname(pageTitle, lang);
-    const seriesRe = lang === "uk" ? /серіал/i : /tv series|television series/i;
-    const mediaType = seriesRe.test(sum.description || "") ? "серіал" : "фільм";
-    return { poster: poster, description: description, year: year, originalTitle: (originalTitle || pageTitle), pageTitle: pageTitle, lang: lang, director: director, type: mediaType };
+    const mediaType = sum.__isSeries ? "серіал" : "фільм";
+    return { poster: poster, description: description, year: year, originalTitle: ((originalTitle || pageTitle) || "").replace(/\s*\([^)]*\)\s*$/, ""), pageTitle: pageTitle, lang: lang, director: director, type: mediaType };
   }catch(e){ return null; }
 }
 
