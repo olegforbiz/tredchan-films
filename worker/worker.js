@@ -87,6 +87,12 @@ export default {
       const poster = (data.poster || "").toString().trim().slice(0, 500);
       const director = (data.director || "").toString().trim().slice(0, 100);
       const mediaType = (data.mediaType || "").toString().trim().slice(0, 20);
+      const ratingRaw = (data.rating || "").toString().trim().slice(0, 10);
+      let ratingNum = null;
+      {
+        const rn = parseInt(ratingRaw, 10);
+        if (!isNaN(rn) && rn >= 1 && rn <= 10) ratingNum = rn;
+      }
 
       if (!title) return jsonResponse({ error: "Title is required" }, 400);
 
@@ -113,6 +119,7 @@ export default {
       if (director) issueBody += "Режисер: " + director + "\n";
       if (mediaType) issueBody += "Тип: " + mediaType + "\n";
       if (imdbRating) issueBody += "Рейтинг IMDb: " + imdbRating + "\n";
+      if (ratingNum) issueBody += "Оцінка автора: " + ratingNum + "\n";
       if (poster) issueBody += "Постер: " + poster + "\n";
       issueBody += "\n";
       if (description) issueBody += "Опис: " + description + "\n\n";
@@ -257,6 +264,12 @@ export default {
       const poster = (data.poster || "").toString().trim().slice(0, 500);
       const mediaType = (data.mediaType || "").toString().trim().slice(0, 20);
       const description = (data.description || "").toString().trim().slice(0, 1000);
+      const ratingRaw = (data.rating || "").toString().trim().slice(0, 10);
+      let ratingNum = null;
+      {
+        const rn = parseInt(ratingRaw, 10);
+        if (!isNaN(rn) && rn >= 1 && rn <= 10) ratingNum = rn;
+      }
 
       if (!title) return jsonResponse({ error: "Title is required" }, 400);
 
@@ -284,6 +297,7 @@ export default {
       if (year) issueBody += "Рік: " + year + "\n";
       if (mediaType) issueBody += "Тип: " + mediaType + "\n";
       if (imdbRating) issueBody += "Рейтинг IMDb: " + imdbRating + "\n";
+      if (ratingNum) issueBody += "Оцінка автора: " + ratingNum + "\n";
       if (genres) issueBody += "Жанри: " + genres + "\n";
       if (poster) issueBody += "Постер: " + poster + "\n";
       issueBody += "\n";
@@ -315,6 +329,7 @@ export default {
 
         let proposerName = "Тредчан";
         let proposerComment = "";
+        let proposerRating = "";
         const origRes = await fetch("https://api.github.com/repos/" + REPO + "/issues/" + number, {
           headers: ghHeaders,
         });
@@ -325,6 +340,8 @@ export default {
           if (nameMatch && nameMatch[1].trim()) proposerName = nameMatch[1].trim();
           const commentMatch = origBody.match(/Коментар тредчана:\s*([\s\S]*)/i);
           if (commentMatch) proposerComment = commentMatch[1].trim();
+          const ratingMatch = origBody.match(/Оцінка автора:\s*(\d{1,2})/i);
+          if (ratingMatch) proposerRating = ratingMatch[1].trim();
         }
 
         const ghRes = await fetch("https://api.github.com/repos/" + REPO + "/issues/" + number, {
@@ -337,8 +354,9 @@ export default {
           return jsonResponse({ error: "GitHub API error", details: errText }, 502);
         }
 
-        if (proposerComment) {
-          const commentIssueBody = "Ім\'я: " + proposerName + "\n\nКоментар: " + proposerComment;
+        if (proposerComment || proposerRating) {
+          const ratingLine = proposerRating ? "Оцінка (1-10): " + proposerRating + "\n\n" : "";
+          const commentIssueBody = "Ім\'я: " + proposerName + "\n\n" + ratingLine + "Коментар: " + proposerComment;
           await fetch("https://api.github.com/repos/" + REPO + "/issues", {
             method: "POST",
             headers: ghHeaders,
