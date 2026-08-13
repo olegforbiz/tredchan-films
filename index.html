@@ -210,6 +210,8 @@ button.rate-link{background:none;font-family:inherit;cursor:pointer;}
         <p class="propose-preview-desc" id="proposePreviewDesc"></p>
       </div>
     </div>
+    <label class="modal-label">Оцінка (1-10, необов'язково)</label>
+    <input type="number" id="proposeModalRating" class="modal-input" min="1" max="10" placeholder="напр. 8">
     <label class="modal-label">Чому раджу</label>
     <textarea id="proposeModalComment" class="modal-textarea" placeholder="Коротко, чому варто подивитись"></textarea>
     <div class="modal-actions">
@@ -242,6 +244,8 @@ button.rate-link{background:none;font-family:inherit;cursor:pointer;}
         <p class="propose-preview-desc" id="onbPreviewDesc"></p>
       </div>
     </div>
+    <label class="modal-label">Оцінка (1-10, необов'язково)</label>
+    <input type="number" id="onbRating" class="modal-input" min="1" max="10" placeholder="напр. 8">
     <label class="modal-label">Чим саме зайшов</label>
     <textarea id="onbComment" class="modal-textarea" placeholder="Коротко, що тобі в ньому сподобалось"></textarea>
     <div class="modal-actions">
@@ -801,6 +805,17 @@ function buildSeedPost(item, ratings, likes, seenEntries){
   } else {
     commentsWrap.remove();
   }
+  if(isAdmin && item.approvedIssueNumber){
+    const delDiv = document.createElement("div");
+    delDiv.className = "admin-actions";
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "admin-btn reject-btn";
+    delBtn.textContent = "Видалити з рейтингу";
+    delBtn.addEventListener("click", function(){ deleteApprovedItem(item.approvedIssueNumber, item.t); });
+    delDiv.appendChild(delBtn);
+    post.querySelector(".post-main").appendChild(delDiv);
+  }
   return post;
 }
 
@@ -1242,6 +1257,7 @@ function openProposeModal(){
   document.getElementById("proposeModalName").value = getMyName();
   document.getElementById("proposeModalTitle").value = "";
   document.getElementById("proposeModalComment").value = "";
+  document.getElementById("proposeModalRating").value = "";
   const hint = document.getElementById("proposeModalHint");
   if(hint){ hint.textContent = ""; hint.style.color = ""; }
   const submitBtn = document.getElementById("proposeModalSubmit");
@@ -1309,6 +1325,7 @@ document.getElementById("proposeModalSubmit").addEventListener("click", async fu
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
         type: "propose", title: title, name: name, comment: comment,
+        rating: (document.getElementById("proposeModalRating").value || "").trim(),
         year: (proposeSearchResult && proposeSearchResult.year) || "",
         originalTitle: (proposeSearchResult && proposeSearchResult.originalTitle) || "",
         description: (proposeSearchResult && proposeSearchResult.description) || "",
@@ -1439,6 +1456,11 @@ async function deleteReplyEntry(commentId){
   const ok = await adminAction({ type: "deleteComment", commentId: commentId });
   if(ok) init();
 }
+async function deleteApprovedItem(number, title){
+  if(!confirm('Видалити "'+title+'" з рейтингу?')) return;
+  const ok = await adminAction({ type: "closeIssue", number: number });
+  if(ok) init();
+}
 
 
 let onbStep = 0;
@@ -1509,6 +1531,7 @@ function openOnbModal(){
   document.getElementById("onbName").value = getMyName() || "";
   document.getElementById("onbTitle").value = "";
   document.getElementById("onbComment").value = "";
+  document.getElementById("onbRating").value = "";
   document.getElementById("onbHint").textContent = "";
   renderOnbPreview(null);
   updateOnbUI();
@@ -1564,6 +1587,7 @@ if(onbSubmitEl){
         method: "POST", headers: {"Content-Type":"application/json"},
         body: JSON.stringify({
           type: "taste", title: title, name: name, comment: comment,
+          rating: (document.getElementById("onbRating").value || "").trim(),
           year: (onbSearchResult && onbSearchResult.year) || "",
           originalTitle: (onbSearchResult && onbSearchResult.originalTitle) || "",
           description: (onbSearchResult && onbSearchResult.description) || "",
@@ -1588,6 +1612,7 @@ if(onbSubmitEl){
       } else {
         document.getElementById("onbTitle").value = "";
         document.getElementById("onbComment").value = "";
+        document.getElementById("onbRating").value = "";
         onbSearchResult = null;
         renderOnbPreview(null);
         updateOnbUI();
